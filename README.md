@@ -19,14 +19,14 @@ As only renderable objects can have shader assignments, I find this an ideal and
 
 You can toggle these groups easily via the utility window:
 
->![Off](https://lh3.googleusercontent.com/39v_N8IaQM6N01jlX8lnHJ96Nbr2OdTg61Xez8Ck97bLiurIJULPsRLTi3f5l3LEo8qLIfPlLjY86Ww=w1443-h920)
->![On](https://lh3.googleusercontent.com/5QJRFys5EIeWigb_ZL1h-RuVhutLAQj221o5V1WfgMo_UeF-4YFIKDwxWK6SWElxLZXJfnuzWRruk-g=w1443-h920)
+>![Screenshot](/images/renderSetupUtility_overview1.png?raw=true "Shader Groups")
+>![Screenshot](/images/renderSetupUtility_overview2.png?raw=true "Shader Groups Added")
 
 It is also easy to batch add and edit arnold property overrides or shader overrides:
->![enter image description here](https://lh3.googleusercontent.com/0NPkp-3geS4bBvOWOKamW2I4nzYI0XtFiHFINAXF0Xo00-8aCXmk1b4XJLE1wxufvuWRNb57jMuqMSc=w1443-h920)
+>![Screenshot](/images/renderSetupUtility_overview3.png?raw=true "Arnold Propery Overrides")
 
 Tool to create and assign shaders:
-> ![enter image description here](https://lh3.googleusercontent.com/KeFnwElak2S2gSwFUIYNAgCDmzxaTmWYPdWZdJhGqp62BTfbcHkM1QoLaU68CyTvT61YUUYrAQghDFw=w1443-h920)
+> ![Screenshot](/images/renderSetupUtility_overview4.png?raw=true "Create Shader Group")
 
 ----------
 ## Installation
