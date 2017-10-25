@@ -8,10 +8,14 @@ I often use shader assignments as the basis to organise my scenes.
 For instance, in the case of, say, a _'house'_ I would use the following shader naming convention:
 
 > _house1_roof_
+
 > _house1_doorFrame_
+
 > _house1_doorHandle_
+
 > _house1_chimney_
-> ... etc.
+
+> _... etc._
 
 **'house1'** becomes the main group, and **'roof'** is a sub-item of that group. Each shader in effect describes a **set** via the shader assignments.
 
