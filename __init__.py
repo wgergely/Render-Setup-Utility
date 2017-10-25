@@ -1,0 +1,9 @@
+__author__ = "Gergely Wootsch"
+__copyright__ = "Copyright 2017, Gergely Wootsch"
+__credits__ = ["Studio AKA"]
+__license__ = "GPL"
+__version__ = "0.4.9"
+__modified__ = "29/09/2017"
+__maintainer__ = "Gergely Wootsch"
+__email__ = "hello@gergely-wootsch.com"
+__status__ = "Production"
