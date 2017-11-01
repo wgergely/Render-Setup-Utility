@@ -25,32 +25,16 @@ import RenderSetupUtility.ac.templates as templates
 import RenderSetupUtility.ac.psCommand as psCommand
 import RenderSetupUtility.ac.aeCommand as aeCommand
 
-# try:
-#
-# except:
-#     raise RuntimeError('Unable to import MtoA python libraries. Make sure the Arnold plugin is loaded.')
-
-"""
-Main package item for ui and functionality creation.
-Some of the defined functions need organising, eg. the autoConnect comp creator needs moving 'ac' submodules.
-
-TODO:
-
-There's lots to fix and change.
-
-Add custom shader overrides:
-"""
-
-WINDOW_WIDTH = 370
-WINDOW_HEIGHT = 350
+WINDOW_WIDTH = 426
+WINDOW_HEIGHT = 150
 WINDOW_BACKGROUND = (0.22, 0.22, 0.22)
 FRAME_BACKGROUND = (0.245, 0.245, 0.245)
-FRAME_MARGIN = (6,6)
-SCROLLBAR_THICKNESS = 21
+FRAME_MARGIN = (12,12)
+SCROLLBAR_THICKNESS = 12
 ACTIVEITEM_PREFIX = ' '
 COLLECTION_SUFFIX = '_collection'
-MIN_NUMBER_OF_ROWS = 2
-MAX_NUMBER_OF_ROWS = 15
+MIN_NUMBER_OF_ROWS = 3
+MAX_NUMBER_OF_ROWS = 12
 
 windowID            = 'RenderSetupUtilityWindow'
 windowTitle         = 'Render Setup Utility'
@@ -174,10 +158,14 @@ def _outputTemplate():
     # Output templates
     listItem = []
     menuName = 'rsuWindow_optionMenu05'
+
     for item in renderOutput.OUTPUT_TEMPLATES:
         listItem.append(item)
+
     resetOptionMenu(menuName, listItem, rl=False)
+
     imageFilePrefix = cmds.getAttr('%s.imageFilePrefix' % renderOutput.DEFAULTS_NODE)
+
     current = [t for t in renderOutput.OUTPUT_TEMPLATES if imageFilePrefix == t]
     if current:
         selectOptionMenuItem(menuName, current[0])
@@ -246,7 +234,7 @@ def setPropertyOverridesMode():
 
         QItem = _getQItem('rsuWindow_text01', QtWidgets.QLabel)
         QItem.setStyleSheet('{color: rgb(200,200,200)}')
-        QItem.setText('Arnold Property Overrides')
+        QItem.setText('Arnold property overrides')
 
         for index, item in enumerate(rsUtility.overrideAttributes):
             cmds.checkBox('rsuWindow_checkbox' + str(int(index+2)).zfill(2), edit=True, enable=True)
@@ -270,11 +258,8 @@ def setPropertyOverridesMode():
             setFalse()
             propertyOverridesMode = False
             QItem = _getQItem('rsuWindow_text01', QtWidgets.QLabel)
-            QItem.setText('No property overrides to change')
-            QItem.setStyleSheet('QLabel {\
-                color: rgb(50,50,50);\
-                font-weight: normal;\
-            }')
+            QItem.setText('No applied arnold overrides found...')
+            QItem.setStyleSheet('QLabel {color: rgb(105,105,105); font-weight: normal;}')
             return False
 
     for s in sel:
@@ -297,9 +282,9 @@ def setPropertyOverridesMode():
             # Set string
             QItem = _getQItem('rsuWindow_text01', QtWidgets.QLabel)
             if len(sel) == 1:
-                QItem.setText('Change Override Values:')
+                QItem.setText('Edit override values:')
             if len(sel) > 1:
-                QItem.setText('Change Override Values (multiple selected):')
+                QItem.setText('Edit override values (multiple):')
             QItem.setStyleSheet('QLabel {\
                 color: rgb(200,200,200);\
                 font-weight: bold;\
@@ -400,7 +385,7 @@ def setShaderOverrideMode(query=False):
         selectedShaderOverride = None
         overrideShader = None
         QItem.setStyleSheet('QLabel {color: rgb(200,200,200)}')
-        QItem.setText('Shader Override')
+        QItem.setText('Shader overrides:')
         return False
 
     # Return false if any of the selected is inactive.
@@ -412,7 +397,7 @@ def setShaderOverrideMode(query=False):
             selectedShaderOverride = None
             overrideShader = None
             QItem.setStyleSheet('QLabel {color: rgb(200,200,200); font-weight: normal;}')
-            QItem.setText('Shader Override')
+            QItem.setText('Shader override:')
             return False
 
         mode = getShaderOverrideMode(shaderName)
@@ -421,8 +406,8 @@ def setShaderOverrideMode(query=False):
             shaderOverrideMode = False
             selectedShaderOverride = None
             overrideShader = None
-            QItem.setStyleSheet('QLabel {color: rgb(50,50,50); font-weight: bold;}')
-            QItem.setText('No shader override in the collection to change.')
+            QItem.setStyleSheet('QLabel {color: rgb(105,105,105); font-weight: normal;}')
+            QItem.setText('No shader override in the collection to change...')
             return False
 
     for s in sel:
@@ -435,19 +420,19 @@ def setShaderOverrideMode(query=False):
             selectOptionMenuItem('rsuWindow_optionMenu02', selectedShaderOverride)
 
             if len(sel) == 1:
-                # QItem.setStyleSheet('QLabel {color: rgb(200,50,50); font-weight: bold;}')
-                QItem.setText('Swap Shader')
+                QItem.setStyleSheet('QLabel {color: rgb(200,200,200); font-weight: bold;}')
+                QItem.setText('Swap shader override:')
             if len(sel) > 1:
-                # QItem.setStyleSheet('QLabel {color: rgb(200,50,50); font-weight: bold;}')
-                QItem.setText('Swap Shader (multiple selected)')
+                QItem.setStyleSheet('QLabel {color: rgb(200,200,200); font-weight: bold;}')
+                QItem.setText('Swap shader override (multiple):')
             return True
         if mode is False:
             # Doesn't have a shader override
             shaderOverrideMode = False
             selectedShaderOverride = None
             overrideShader = None
-            QItem.setStyleSheet('QLabel {color: rgb(50,50,50); font-weight: bold;}')
-            QItem.setText('No shader override in the collection to change.')
+            QItem.setStyleSheet('QLabel {color: rgb(105,105,105); font-weight: normal;}')
+            QItem.setText('No shader override in the collection to change...')
             return False
         break
 
@@ -592,6 +577,7 @@ cmd['rsuWindow_optionMenu03'] = rsuWindow_optionMenu03
 
 def rsuWindow_optionMenu04(arg):
     rsRenderOutput.setVersion(arg)
+    _updatePathText()
 cmd['rsuWindow_optionMenu04'] = rsuWindow_optionMenu04
 
 def rsuWindow_optionMenu05(arg):
@@ -934,15 +920,21 @@ def rsuWindow_button11(arg):
 cmd['rsuWindow_button11'] = rsuWindow_button11
 
 def rsuWindow_button12(arg):
-    menuName = 'rsuWindow_optionMenu04'
+    """
+    +1 button. Increments the version number of the output.
+    """
+
     lyr = rsUtility.renderSetup.getVisibleRenderLayer().name()
     versions = rsRenderOutput.getVersions(lyr)
+
     if versions:
         search = re.search('[0-9]{3}', versions[-1])
         if search:
-            newVersion = 'v%s' % str(int(search.group(0)) + 1).zfill(3)
+            newVersion = 'v{0}'.format(str(int(search.group(0)) + 1).zfill(3))
             rsRenderOutput.addVersionDir(lyr, newVersion)
+            rsRenderOutput.setVersion(newVersion)
             _outputTemplate()
+
     _updatePathText()
 cmd['rsuWindow_button12'] = rsuWindow_button12
 
@@ -1184,16 +1176,17 @@ cmd['makeComp'] = makeComp
 def rsuWindow_button14(arg):
     IMAGES_ROOT = 'images'
 
+
     val = cmds.button('rsuWindow_button14', query=True, label=True)
     if val == 'Output path not yet set':
+        print '# Output path not yet set - Unable to open directory'
         return
     else:
+        cmd = None
         workspace = cmds.workspace(query=True, rootDirectory=True)
         if workspace:
-            # workspace = sceneName.rsplit('\\', 1)[0]
-            # workspace
             p = os.path.join(workspace, IMAGES_ROOT, val)
-            p = os.patchech.normpath(p)
+            p = os.path.normpath(p)
             parent = p.rsplit('\\', 1)[0]
             if os.path.isdir(parent):
                 if os.path.isfile(p):
@@ -1212,8 +1205,12 @@ def rsuWindow_button14(arg):
                     parent = parent.rsplit('\\', 1)[0]
                     if os.path.isdir(parent):
                         cmd = '"%s" "%s"' % ('explorer', parent)
-            process = QProcess()
-            process.startDetached(cmd)
+
+            if cmd:
+                process = QProcess()
+                process.startDetached(cmd)
+            print '# Unable to get reveal directory - Folder doesn\'t exist'
+            print '# Parent: {0}'.format(parent)
         else:
             raise RuntimeError('File has not been saved. Unable to get path.')
 cmd['rsuWindow_button14'] = rsuWindow_button14
@@ -1331,15 +1328,13 @@ def rsShaderScrollList_onSelect(*args):
 
     for s in sel:
         shaderName = rsShaderUtility.customStringToShaderName(s)
-        if (rsShaderUtility.data[shaderName]['standIn'] is False):
-            pass
-        elif (rsShaderUtility.data[shaderName]['light'] is False):
-            pass
-        elif (rsShaderUtility.data[shaderName]['environment'] is False):
-            pass
-        else:
-            window.gwCustomRenamer.setOptionMenu1(value=shaderName.split('_')[0])
-            window.gwCustomRenamer.setOptionMenu2(value=shaderName.split('_')[1])
+        if rsShaderUtility.data[shaderName]['shader']:
+            try:
+                window.gwCustomRenamer.setOptionMenu1(value=shaderName.split('_')[0])
+                window.gwCustomRenamer.setOptionMenu2(value=shaderName.split('_')[1])
+            except:
+                pass
+
 
         _currentSelection.append(shaderName)
     currentSelection = _currentSelection
@@ -1457,7 +1452,7 @@ def addScrollLayout(inTitle, parent, enable=True, visible=True):
         inTitle,
         parent = parent,
         verticalScrollBarAlwaysVisible = False,
-        width = WINDOW_WIDTH+6,
+        width = WINDOW_WIDTH,
         height = WINDOW_HEIGHT,
         horizontalScrollBarThickness = SCROLLBAR_THICKNESS,
         verticalScrollBarThickness = SCROLLBAR_THICKNESS,
@@ -1477,7 +1472,7 @@ def addFrameLayout(inName, label, enable=True, marginWidth=FRAME_MARGIN[0], marg
         marginHeight = marginHeight,
         labelAlign = 'center',
         labelVisible = labelVisible,
-        labelIndent = 0,
+        labelIndent = 0
     )
 def addRowLayout(inName, numberOfColumns,
                  columnAlign1 = '', columnAlign2 = ('',''), columnAlign3 = ('','',''), columnAlign4 = ('','','',''), columnAlign5 = ('','','','',''), columnAlign6 = ('','','','','',''),
@@ -1918,13 +1913,23 @@ class CustomRenamer(object):
         sel = cmds.ls(selection=True)
         placeholderText = ''
 
+        backgroundColor=[0.28]*3
+        height=22
+
         cmds.columnLayout('%s_columnLayout01'%(cName),
             parent='%s_frameLayout05' % ('RenderSetupUtilityWindow'),
-            width=WINDOW_WIDTH-(FRAME_MARGIN[0]*2),
             columnAlign = 'left',
             columnAttach = ('left', 0),
             adjustableColumn=False,
-            rowSpacing=0
+            rowSpacing=0,
+            backgroundColor=backgroundColor
+        )
+
+        # height=24
+        cmds.separator(
+            parent = '%s_columnLayout01'%(cName),
+            style='none',
+            height = 6
         )
 
         if cmds.ls(selection=True):
@@ -1932,11 +1937,56 @@ class CustomRenamer(object):
         else:
             placeholder = 'newName'
 
-        backgroundColor=[0.28]*3
-        height=22
+        # row2
+        cmds.rowLayout(
+            '%s_rowLayout01'%(cName),
+            parent = '%s_columnLayout01'%(cName),
+            numberOfColumns = 3,
+            columnAlign3 = ('left','left','right'),
+            columnAttach3 = ('both','both','both'),
+            columnWidth3=((WIDTH/3),(WIDTH/3),(WIDTH/3)),
+            enableBackground=True,
+            backgroundColor=backgroundColor
+        )
+        cmds.textField(
+            '%s_textField01'%(cName),
+            placeholderText = 'group...',
+            enterCommand = self.makeNameString,
+            textChangedCommand = self.makeNameString,
+            changeCommand = self.makeNameString,
+            height=height,
+            font='plainLabelFont',
+            editable = True,
+            enableBackground=True,
+            backgroundColor=backgroundColor
+        )
+        cmds.textField(
+            '%s_textField02'%(cName),
+            placeholderText = 'element...',
+            enterCommand = self.makeNameString,
+            textChangedCommand = self.makeNameString,
+            changeCommand = self.makeNameString,
+            height=height,
+            editable = True,
+            font='plainLabelFont',
+            enableBackground=True,
+            backgroundColor=backgroundColor
+        )
+        cmds.textField(
+            '%s_textField03'%(cName),
+            placeholderText = 'suffix...',
+            text = '',
+            enterCommand = self.makeNameString,
+            textChangedCommand = self.makeNameString,
+            changeCommand = self.makeNameString,
+            height=height,
+            editable = True,
+            font='plainLabelFont',
+            enableBackground=True,
+            backgroundColor=backgroundColor
+        )
 
         # row1
-
         cmds.rowLayout(
             '%s_rowLayout02'%(cName),
             parent = '%s_columnLayout01'%(cName),
@@ -1945,11 +1995,12 @@ class CustomRenamer(object):
             columnAttach3 = ('both','both','both'),
             columnWidth3=((WIDTH/3),(WIDTH/3),(WIDTH/3)),
             height=height,
-            enableBackground=True
+            enableBackground=True,
+            backgroundColor=backgroundColor
         )
         cmds.optionMenu(
             '%s_optionMenu01'%(cName),
-            label = '',
+            label = 'Group:',
             changeCommand = self.optionMenu01_changeCommand,
             alwaysCallChangeCommand=True,
             height=height,
@@ -1965,77 +2016,79 @@ class CustomRenamer(object):
         )
         cmds.optionMenu(
             '%s_optionMenu03'%(cName),
-            label = '',
+            label = 'Type:',
             changeCommand = self.optionMenu03_changeCommand,
             height = height,
             alwaysCallChangeCommand = True
         )
 
-        # row2
-        backgroundColor=(0.22,0.22,0.22)
-        cmds.rowLayout(
-            '%s_rowLayout01'%(cName),
-            parent = '%s_columnLayout01'%(cName),
-            numberOfColumns = 3,
-            columnAlign3 = ('left','left','right'),
-            columnAttach3 = ('both','both','both'),
-            columnWidth3=((WIDTH/3),(WIDTH/3),(WIDTH/3.1)),
-            width=WIDTH,
-            enableBackground=True,
-            backgroundColor=backgroundColor
-        )
-        cmds.textField(
-            '%s_textField01'%(cName),
-            placeholderText = 'Group Name',
-            enterCommand = self.makeNameString,
-            textChangedCommand = self.makeNameString,
-            changeCommand = self.makeNameString,
-            height=height,
-            font='plainLabelFont',
-            editable = True,
-            enableBackground=True,
-            backgroundColor=backgroundColor
-        )
-        cmds.textField(
-            '%s_textField02'%(cName),
-            placeholderText = 'Element Name',
-            enterCommand = self.makeNameString,
-            textChangedCommand = self.makeNameString,
-            changeCommand = self.makeNameString,
-            height=height,
-            editable = True,
-            font='plainLabelFont',
-            enableBackground=True,
-            backgroundColor=backgroundColor
-        )
-        cmds.textField(
-            '%s_textField03'%(cName),
-            placeholderText = 'Suffix (optional)',
-            text = '',
-            enterCommand = self.makeNameString,
-            textChangedCommand = self.makeNameString,
-            changeCommand = self.makeNameString,
-            height=height,
-            editable = True,
-            font='plainLabelFont',
-            enableBackground=True,
-            backgroundColor=backgroundColor
-        )
 
         # height=24
         cmds.separator(
             parent = '%s_columnLayout01'%(cName),
             style='none',
-            height = 8
+            height = 6
         )
+
         cmds.rowLayout(
             '%s_rowLayout03'%(cName),
             parent = '%s_columnLayout01'%(cName),
             numberOfColumns = 4,
             columnAlign4 = ('left','left','left','left'),
             columnAttach4 = ('both','both','both','right'),
-            columnWidth4=((WIDTH/4),(WIDTH/4),(WIDTH/4),(WIDTH/4)),
+            columnWidth4=((WIDTH/3),(WIDTH/6),(WIDTH/6),(WIDTH*0.2)),
             width=WIDTH
+        )
+
+        # height=24
+        cmds.separator(
+            parent = '%s_columnLayout01'%(cName),
+            style='none',
+            height = 6
+        )
+
+        def createShader(*args):
+
+            self.makeNameString()
+
+            sel = cmds.ls(selection=True)
+            rel = cmds.listRelatives(sel, allDescendents=True, type='mesh', path=True)
+
+            if cmds.objExists(self.newName) is True:
+                print 'Shader \'%s\' already exists. Skipping.' % self.newName
+                newShader = self.newName
+                return None
+            else:
+                newShader = cmds.shadingNode(self.shaderType, asShader=True, name=self.newName)
+
+                if cmds.objExists(str(newShader)+'SG'):
+                    shading_group = str(newShader)+'SG'
+                else:
+                    shading_group = cmds.sets(name=str(newShader)+'SG', renderable=True, noSurfaceShader=True, empty=True)
+
+            try:
+                # Assign Shader
+                cmds.select(rel)
+                cmds.hyperShade(assign=newShader)
+                cmds.select(sel)
+            except:
+                cmds.select(newShader)
+
+
+            # Add PSD file
+            addPSD = cmds.checkBox('%s_checkBox01'%(cName), query=True, value=True)
+            if addPSD:
+                ac = autoConnect.AutoConnect()
+                ac.createPSDFile(newShader, apply=True)
+
+            self.updateUI(updateWindow=True)
+        cmds.button(
+            '%s_button02'%(cName),
+            parent='%s_rowLayout03'%(cName),
+            label = 'Create Shader Group',
+            command = createShader,
+            height=height,
+            enable=True
         )
         def rename(*args):
             dagSel = cmds.ls(selection=True)
@@ -2086,52 +2139,9 @@ class CustomRenamer(object):
             height=height,
             enable=True
         )
-        def createShader(*args):
-
-            self.makeNameString()
-
-            sel = cmds.ls(selection=True)
-            rel = cmds.listRelatives(sel, allDescendents=True, type='mesh', path=True)
-
-            if cmds.objExists(self.newName) is True:
-                print 'Shader \'%s\' already exists. Skipping.' % self.newName
-                newShader = self.newName
-                return None
-            else:
-                newShader = cmds.shadingNode(self.shaderType, asShader=True, name=self.newName)
-
-                if cmds.objExists(str(newShader)+'SG'):
-                    shading_group = str(newShader)+'SG'
-                else:
-                    shading_group = cmds.sets(name=str(newShader)+'SG', renderable=True, noSurfaceShader=True, empty=True)
-
-            try:
-                # Assign Shader
-                cmds.select(rel)
-                cmds.hyperShade(assign=newShader)
-                cmds.select(sel)
-            except:
-                cmds.select(newShader)
-
-
-            # Add PSD file
-            addPSD = cmds.checkBox('%s_checkBox01'%(cName), query=True, value=True)
-            if addPSD:
-                ac = autoConnect.AutoConnect()
-                ac.createPSDFile(newShader, apply=True)
-
-            self.updateUI(updateWindow=True)
-        cmds.button(
-            '%s_button02'%(cName),
-            parent='%s_rowLayout03'%(cName),
-            label = 'Create',
-            command = createShader,
-            height=height,
-            enable=True
-        )
         cmds.checkBox(
             '%s_checkBox01'%(cName),
-            label='Create PSD'
+            label='Make PSD'
         )
 
     def updateUI(self, updateWindow=False):
@@ -2204,9 +2214,9 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.mayaMainWindow = shiboken2.wrapInstance(long(ptr), QtWidgets.QMainWindow)
 
         self.setWindowFlags(QtCore.Qt.Window)
+        self.setWindowTitle('Hulll')
         self.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
 
-        self.setWindowTitle('Render Setup Utility')
         self.setObjectName(self.__class__.toolName)
 
         # Set window Layout
@@ -2242,6 +2252,8 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     # Delete it for good
                     obj.setParent(None)
                     obj.deleteLater()
+
+
     def createUI(self):
         """
         Main RenderSetupUtility ui function
@@ -2426,28 +2438,25 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         cmds.columnLayout('rsuWindow_columnLayout03', edit=True, visible=False)
 
         ##################################################
-
-        cmds.columnLayout(
-            'rsuWindow_columnLayout04',
-            parent=layoutPath,
-            width=WINDOW_WIDTH-(FRAME_MARGIN[0]*2),
-            columnAlign = 'left',
-            columnAttach = ('both', 4),
-            adjustableColumn=True,
-            rowSpacing=0
-        )
-
+        # Extras
+        cmds.setParent(layoutPath)
+        addFrameLayout(
+            '%s_frameLayout50' % (self.__class__.__name__),
+            'Extras',
+            collapsable=True,
+            marginHeight=0,
+            labelVisible=True)
 
         ##################################################
         # Add & Assign Shader Groups
-        cmds.setParent('rsuWindow_columnLayout04')
         addFrameLayout(
             '%s_frameLayout05' % (self.__class__.__name__),
             'Add & Assign Shader Groups',
-            marginWidth=0,
             collapsable=True,
-            collapse=True,
-            labelVisible=True)
+            marginWidth=0,
+            marginHeight=0,
+            collapse=False,
+            labelVisible=False)
         # Add the renamer window
         self.gwCustomRenamer = CustomRenamer()
         self.gwCustomRenamer.createUI()
@@ -2456,13 +2465,14 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         ##################################################
         # AutoConnect
 
-        cmds.setParent('rsuWindow_columnLayout04')
+        cmds.setParent('%s_frameLayout50' % (self.__class__.__name__))
 
         addFrameLayout(
             '%s_frameLayout03' % (self.__class__.__name__),
             'Adobe Connector',
-            marginWidth=0,
             collapsable=True,
+            marginWidth=0,
+            marginHeight=0,
             collapse=True,
             labelVisible=True)
         addRowLayout(
@@ -2490,12 +2500,13 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         # Render Setup /
         # Output settings
 
-        cmds.setParent('rsuWindow_columnLayout04')
+        cmds.setParent('%s_frameLayout50' % (self.__class__.__name__))
         addFrameLayout(
             '%s_frameLayout04' % (self.__class__.__name__),
             'Output Settings',
-            marginWidth=0,
             collapsable=True,
+            marginWidth=0,
+            marginHeight=0,
             collapse=True,
             labelVisible=True
         )
@@ -2798,9 +2809,9 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
     Custom ui and delegate for model.
     """
 
-    ROW_HEIGHT = 24
+    ROW_HEIGHT = 30
     FONT_PIXEL_SIZE = 11
-    FONT_PIXEL_SIZE_OFFSET = ((ROW_HEIGHT/2)) / 2
+    FONT_PIXEL_SIZE_OFFSET = (((ROW_HEIGHT/2)) / 2) + 2
     ROW_WIDTH = WINDOW_WIDTH - (FRAME_MARGIN[0] * 2) - 6
 
     def __init__(self, parent=None, *args):
@@ -2863,6 +2874,10 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
 
         # Getting visual width of the text to be drawn
         shaderNameWidth = QtGui.QFontMetrics(font).width(shaderName.split(':')[-1]) # in Maya 2017 update 4 I'm not getting the ':' anymore..
+
+        font.setBold(False)
+        font.setPixelSize(10)
+        painter.setFont(font)
         nameSpaceWidth = QtGui.QFontMetrics(font).width(nameSpace)
 
         # Draw active items
@@ -2880,9 +2895,12 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
                 elif rsShaderUtility.data[shaderName]['light']:
                     painter.setBrush(QtGui.QBrush(QtGui.QColor(150,100,50)))
                 else:
-                    painter.setBrush(QtGui.QBrush(QtGui.QColor(82,82,82)))
+                    painter.setBrush(QtGui.QBrush(QtGui.QColor(90,90,90)))
+
+            # Background rectangle
             painter.drawRect(option.rect)
 
+            # 'Active' marker
             painter.setBrush(QtGui.QBrush(QtGui.QColor(255,170,100)))
             painter.drawRect(
                 QtCore.QRect(
@@ -2904,7 +2922,7 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
                         QtCore.QRect(
                             leadRectangleWidth + mOffset,
                             option.rect.top(),
-                            nameSpaceWidth + leadRectangleWidth,
+                            nameSpaceWidth + leadRectangleWidth*2,
                             option.rect.height()
                         )
                     )
@@ -2933,7 +2951,7 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
 
             painter.drawText(
                 QtCore.QRect(
-                    (leadRectangleWidth if nameSpace != '' else 0) + (leadRectangleWidth*2) + nameSpaceWidth  + mOffset, # adding text spacing then there's a name space drawn
+                    (leadRectangleWidth if nameSpace != '' else 0) + (leadRectangleWidth*3) + nameSpaceWidth  + mOffset, # adding text spacing then there's a name space drawn
                     option.rect.top() + self.__class__.FONT_PIXEL_SIZE_OFFSET,
                     option.rect.width(),
                     option.rect.height() - self.__class__.FONT_PIXEL_SIZE_OFFSET),
@@ -2947,8 +2965,8 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
                 if rsShaderUtility.data[shaderName]['environment'] is False:
                     painter.drawImage(
                         QtCore.QPoint(
-                            (self.__class__.FONT_PIXEL_SIZE_OFFSET / 2) * 3,
-                            option.rect.top() + (self.__class__.FONT_PIXEL_SIZE_OFFSET / 2)
+                            option.rect.width()/2,
+                            option.rect.top() + ((self.__class__.ROW_HEIGHT / 2)-(11/2))
                         ),
                     QIcon)
                 attr = attr.replace('!!','')
@@ -3032,7 +3050,7 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
                         QtCore.QRect(
                             0,
                             option.rect.top(),
-                            nameSpaceWidth + leadRectangleWidth,
+                            nameSpaceWidth + leadRectangleWidth*2,
                             option.rect.height()
                         )
                     )
@@ -3061,7 +3079,7 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
 
             painter.drawText(
                 QtCore.QRect(
-                    (textSpacer if nameSpace != '' else 0) + textSpacer + nameSpaceWidth, # adding text spacing then there's a name space drawn
+                    (textSpacer if nameSpace != '' else 0) + textSpacer + nameSpaceWidth + leadRectangleWidth, # adding text spacing then there's a name space drawn
                     option.rect.top() + self.__class__.FONT_PIXEL_SIZE_OFFSET,
                     option.rect.width(),
                     option.rect.height() - self.__class__.FONT_PIXEL_SIZE_OFFSET),
@@ -3089,6 +3107,18 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
                 raise RuntimeError('Error drawing text.')
 
 
+
+        # Separators
+        painter.setPen(QtGui.QPen(QtCore.Qt.NoPen))
+        painter.setBrush(QtGui.QBrush(QtGui.QColor(50,50,50)))
+        painter.drawRect(
+            QtCore.QRect(
+                option.rect.left(),
+                option.rect.top(),
+                option.rect.width(),
+                1
+            )
+        )
 
         painter.restore()
 
@@ -3338,7 +3368,7 @@ def createUI():
     window.createUI()
     windowStyle = WindowStyle(parent=window)
 
-    cmds.workspaceControl(RenderSetupUtilityWindow.toolName + 'WorkspaceControl', edit=True, widthProperty='fixed')
+    cmds.workspaceControl(RenderSetupUtilityWindow.toolName + 'WorkspaceControl', edit=True, widthProperty='free')
 
     # Event filters for the window.
     # ef = EventFilter(window)

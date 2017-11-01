@@ -125,7 +125,7 @@ class ShaderUtility(object):
     def __init__(self):
         self.data = {}
 
-        self.shaderList = self.getShaderList()
+        self.shaderList = self.getShaderList(excludeOverrides=True)
         self.overrides = None
         self.autoConnectShaders = None
 
@@ -158,6 +158,7 @@ class ShaderUtility(object):
                             'count': 0,
                             'shadingGroup': shEngine,
                             'customString': '',
+                            'shader': True,
                             'environment': False,
                             'standIn': False,
                             'light': False,
@@ -191,6 +192,7 @@ class ShaderUtility(object):
                         'count': 1,
                         'shadingGroup': 'renderSettings',
                         'customString': '%s (1)' % shaderName,
+                        'shader': False,
                         'environment': True,
                         'standIn': False,
                         'light': False,
@@ -219,6 +221,7 @@ class ShaderUtility(object):
                 'count': 1,
                 'shadingGroup': 'renderSettings',
                 'customString': '%s (1)' % shaderName,
+                'shader': False,
                 'environment': False,
                 'standIn': True,
                 'light': False,
@@ -247,6 +250,7 @@ class ShaderUtility(object):
                 'count': 1,
                 'shadingGroup': 'renderSettings',
                 'customString': '%s (1)' % shaderName,
+                'shader': False,
                 'environment': False,
                 'standIn': False,
                 'light': True,
@@ -547,7 +551,7 @@ class ShaderUtility(object):
         return newShader
 
     def getShaderGroups(self, excludeSolo=False):
-        """Returns shader name groups."""
+        """Returns shader name groups"""
 
         matList = self.getShaderList(excludeUnused=False, excludeOverrides=True)
 
