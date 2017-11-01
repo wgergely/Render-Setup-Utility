@@ -2792,9 +2792,9 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
     Custom ui and delegate for model.
     """
 
-    ROW_HEIGHT = 26
-    FONT_PIXEL_SIZE = ROW_HEIGHT / 2.3636
-    FONT_PIXEL_SIZE_OFFSET = (FONT_PIXEL_SIZE + 1) / 2
+    ROW_HEIGHT = 24
+    FONT_PIXEL_SIZE = 11
+    FONT_PIXEL_SIZE_OFFSET = ((ROW_HEIGHT/2)) / 2
     ROW_WIDTH = WINDOW_WIDTH - (FRAME_MARGIN[0] * 2) - 6
 
     def __init__(self, parent=None, *args):
@@ -2830,9 +2830,9 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
         painter.setFont(font)
 
         # UI Properties
-        leadRectangleWidth = 6
-        leadTextMargin = (leadRectangleWidth * 2) + 3
-        textSpacer = 6
+        leadRectangleWidth = 4
+        textSpacer = 4
+        leadTextMargin = (leadRectangleWidth * 2) + textSpacer
 
         # Items
         allItems = cmds.textScrollList('rsShaderScrollList', query=True, allItems=True)
@@ -2867,6 +2867,11 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
 
         # Draw active items
         if rsShaderUtility.isActive(item):
+            if 'M-' in attr:
+                mOffset = leadRectangleWidth
+            else:
+                mOffset = 0
+
             if option.state & QtWidgets.QStyle.State_Selected:
                 painter.setBrush(QtGui.QBrush(QtGui.QColor(82,133,166)))
                 painter.drawRect(option.rect)
@@ -2897,9 +2902,9 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
                     painter.setBrush(QtGui.QBrush(QtGui.QColor(75,75,75)))
                     painter.drawRect(
                         QtCore.QRect(
-                            leadRectangleWidth,
+                            leadRectangleWidth + mOffset,
                             option.rect.top(),
-                            nameSpaceWidth + leadTextMargin,
+                            nameSpaceWidth + leadRectangleWidth,
                             option.rect.height()
                         )
                     )
@@ -2907,11 +2912,12 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
                 # Draw namespace
                 painter.setPen(QtGui.QPen(QtGui.QColor(150,150,150)))
                 font.setBold(False)
+                font.setPixelSize(10)
                 painter.setFont(font)
 
                 painter.drawText(
                     QtCore.QRect(
-                        leadTextMargin, # vertical offset
+                        leadTextMargin-leadRectangleWidth  + mOffset, # vertical offset
                         option.rect.top() + self.__class__.FONT_PIXEL_SIZE_OFFSET,
                         option.rect.width(),
                         option.rect.height() - self.__class__.FONT_PIXEL_SIZE_OFFSET),
@@ -2922,31 +2928,17 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
             # Draw shader name
             painter.setPen(QtGui.QPen(QtGui.QColor(210,210,210)))
             font.setBold(True)
+            font.setPixelSize(self.__class__.FONT_PIXEL_SIZE)
             painter.setFont(font)
 
             painter.drawText(
                 QtCore.QRect(
-                    (textSpacer*2 if nameSpace != '' else 0) + leadTextMargin + nameSpaceWidth, # adding text spacing then there's a name space drawn
+                    (leadRectangleWidth if nameSpace != '' else 0) + (leadRectangleWidth*2) + nameSpaceWidth  + mOffset, # adding text spacing then there's a name space drawn
                     option.rect.top() + self.__class__.FONT_PIXEL_SIZE_OFFSET,
                     option.rect.width(),
                     option.rect.height() - self.__class__.FONT_PIXEL_SIZE_OFFSET),
                 QtCore.Qt.AlignLeft,
                 '%s' % (shaderName.split(':')[-1])
-            )
-
-            # Draw shader type
-            painter.setPen(QtGui.QPen(QtGui.QColor(150,150,150)))
-            font.setPixelSize(10)
-            font.setBold(False)
-            painter.setFont(font)
-            painter.drawText(
-                QtCore.QRect(
-                    (textSpacer*2 if nameSpace != '' else 0) + leadTextMargin + nameSpaceWidth + shaderNameWidth + textSpacer, # adding text spacing then there's a name space drawn
-                    option.rect.top() + self.__class__.FONT_PIXEL_SIZE_OFFSET,
-                    option.rect.width(),
-                    option.rect.height() - self.__class__.FONT_PIXEL_SIZE_OFFSET),
-                QtCore.Qt.AlignLeft,
-                '%s' % (shaderType)
             )
 
             # Draw warning icon
@@ -2975,8 +2967,9 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
                 )
 
             # Arnold shader override and attributes
-            painter.setPen(QtGui.QPen(QtGui.QColor(210,210,210)))
+            painter.setPen(QtGui.QPen(QtGui.QColor(150,150,150)))
             font.setBold(False)
+            font.setPixelSize(10)
             painter.setFont(font)
 
             if '#' in attr: # check if the item is being overriden by a shader
@@ -3000,85 +2993,20 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
                         option.rect.width() - 24,
                         option.rect.height() - self.__class__.FONT_PIXEL_SIZE_OFFSET),
                     QtCore.Qt.AlignRight,
-                    attr
+                    '{0}-{1}'.format(shaderType, attr)
                 )
             else:
                 painter.drawText(
                     QtCore.QRect(
                         leadTextMargin,
                         option.rect.top() + self.__class__.FONT_PIXEL_SIZE_OFFSET,
-                        option.rect.width() - 22,
+                        option.rect.width() - 18,
                         option.rect.height() - self.__class__.FONT_PIXEL_SIZE_OFFSET),
                     QtCore.Qt.AlignRight,
-                    attr
+                    '{0}-{1}'.format(shaderType, attr)
                 )
 
-        # # Inactive items
-        # if rsShaderUtility.isActive(item) is not True:
-        #     if option.state & QtWidgets.QStyle.State_Selected:
-        #         painter.setFont(font)
-        #         painter.setBrush(QtGui.QBrush(QtGui.QColor(82,133,166)))
-        #         painter.drawRect(option.rect)
-        #     else:
-        #         painter.setFont(font)
-        #
-        #         if isEnvironment:
-        #             painter.setBrush(QtGui.QBrush(QtGui.QColor(55,67,77)))
-        #             painter.drawRect(option.rect)
-        #         else:
-        #             painter.setBrush(QtGui.QBrush(QtGui.QColor(55,55,55)))
-        #             painter.drawRect(option.rect)
-        #
-        #     # Draw shader name
-        #     font.setBold(False)
-        #     painter.setPen(QtGui.QPen(QtGui.QColor(230,230,230)))
-        #
-        #     painter.drawText(
-        #         QtCore.QRect(
-        #             leadTextMargin,
-        #             option.rect.top() + 7,
-        #             self.__class__.ROW_WIDTH - 22,
-        #             option.rect.height() - 7),
-        #         QtCore.Qt.AlignLeft,
-        #         shaderName.split(':')[-1]
-        #     )
-        #
-        #     if nameSpace != ':':
-        #         shaderNameWidth = QtGui.QFontMetrics(font).width(shaderName.split(':')[-1])
-        #         painter.setPen(QtGui.QPen(QtGui.QColor(150,150,150)))
-        #         font.setBold(False)
-        #         painter.setFont(font)
-        #
-        #         painter.drawText(
-        #             QtCore.QRect(
-        #                 leadTextMargin + shaderNameWidth + 5,
-        #                 option.rect.top() + 6,
-        #                 option.rect.width(),
-        #                 option.rect.height() - 6),
-        #             QtCore.Qt.AlignLeft,
-        #             '%s' % nameSpace
-        #         )
-        #
-        #     try:
-        #         painter.setPen(QtGui.QPen(QtGui.QColor(210,210,210)))
-        #         painter.setFont(font)
-        #
-        #         painter.drawText(
-        #             QtCore.QRect(
-        #                 leadTextMargin,
-        #                 option.rect.top() + 7,
-        #                 option.rect.width() - 22,
-        #                 option.rect.height() - 7),
-        #             QtCore.Qt.AlignRight,
-        #             attr[1:][:-1]
-        #         )
-        #
-        #     except:
-        #         raise RuntimeError('Error drawing text.')
-        #
-        #
-
-        # !!! Draw active items
+        # !!! Draw inactive items
         if rsShaderUtility.isActive(item) is False:
             if option.state & QtWidgets.QStyle.State_Selected:
                 painter.setBrush(QtGui.QBrush(QtGui.QColor(82,133,166)))
@@ -3102,9 +3030,9 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
                     painter.setBrush(QtGui.QBrush(QtGui.QColor(50,50,50)))
                     painter.drawRect(
                         QtCore.QRect(
-                            leadRectangleWidth,
+                            0,
                             option.rect.top(),
-                            nameSpaceWidth + leadTextMargin,
+                            nameSpaceWidth + leadRectangleWidth,
                             option.rect.height()
                         )
                     )
@@ -3112,11 +3040,12 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
                 # Draw namespace rectangle and text
                 painter.setPen(QtGui.QPen(QtGui.QColor(100,100,100)))
                 font.setBold(False)
+                font.setPixelSize(10)
                 painter.setFont(font)
 
                 painter.drawText(
                     QtCore.QRect(
-                        leadTextMargin, # vertical offset
+                        textSpacer, # vertical offset
                         option.rect.top() + self.__class__.FONT_PIXEL_SIZE_OFFSET,
                         option.rect.width(),
                         option.rect.height() - self.__class__.FONT_PIXEL_SIZE_OFFSET),
@@ -3127,11 +3056,12 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
             # Draw shader name
             painter.setPen(QtGui.QPen(QtGui.QColor(150,150,150)))
             font.setBold(False)
+            font.setPixelSize(self.__class__.FONT_PIXEL_SIZE)
             painter.setFont(font)
 
             painter.drawText(
                 QtCore.QRect(
-                    (textSpacer*2 if nameSpace != '' else 0) + leadTextMargin + nameSpaceWidth, # adding text spacing then there's a name space drawn
+                    (textSpacer if nameSpace != '' else 0) + textSpacer + nameSpaceWidth, # adding text spacing then there's a name space drawn
                     option.rect.top() + self.__class__.FONT_PIXEL_SIZE_OFFSET,
                     option.rect.width(),
                     option.rect.height() - self.__class__.FONT_PIXEL_SIZE_OFFSET),
@@ -3139,24 +3069,11 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
                 '%s' % (shaderName.split(':')[-1])
             )
 
-            # Draw shader type
-            painter.setPen(QtGui.QPen(QtGui.QColor(100,100,100)))
-            font.setPixelSize(10)
-            font.setBold(False)
-            painter.setFont(font)
-            painter.drawText(
-                QtCore.QRect(
-                    (textSpacer*2 if nameSpace != '' else 0) + leadTextMargin + nameSpaceWidth + shaderNameWidth + textSpacer, # adding text spacing then there's a name space drawn
-                    option.rect.top() + self.__class__.FONT_PIXEL_SIZE_OFFSET,
-                    option.rect.width(),
-                    option.rect.height() - self.__class__.FONT_PIXEL_SIZE_OFFSET),
-                QtCore.Qt.AlignLeft,
-                '%s' % (shaderType)
-            )
-
             try:
+                font.setPixelSize(10)
                 painter.setPen(QtGui.QPen(QtGui.QColor(210,210,210)))
                 painter.setFont(font)
+
 
                 painter.drawText(
                     QtCore.QRect(
@@ -3165,7 +3082,7 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
                         option.rect.width() - 22,
                         option.rect.height() - 7),
                     QtCore.Qt.AlignRight,
-                    attr[1:][:-1]
+                    '{0}-{1}'.format(shaderType, attr[1:][:-1])
                 )
 
             except:
