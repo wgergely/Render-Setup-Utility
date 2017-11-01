@@ -157,23 +157,25 @@ class ShaderUtility(object):
                     self.data[shaderName]['count'] = len(self.data[shaderName]['usedBy'])
 
         # Environment nodes
-        for item in cmds.ls(dagObjects=True, shapes=True, absoluteName=False, long=True):
+        for item in cmds.ls(dagObjects=True, shapes=True, long=True):
                 if cmds.nodeType(item) in self.ENVIRONMENT_NODES:
 
-                    # Check for namespace:
+                    # Checking for namespace:
                     split = str(item).split('|')[-1].split(':')
                     if len(split) == 1: # no namespace
                         shaderName = split[0]
                         nameSpace = ''
                     if len(split) > 1:
-                        shaderName = shaderName = str(item).split('|')[-1].split(':')[-1]
                         nameSpace = shaderName = str(item).split('|')[-1].split(':')[0]
+                        shaderName = shaderName = str(item).split('|')[-1].split(':')[-1]
+                    if len(nameSpace) >= 1:
+                        shaderName = '%s:%s' % (nameSpace, shaderName)
 
-                    self.data['%s%s' % (nameSpace, shaderName)] = {
+                    self.data[shaderName] = {
                         'name':shaderName,
                         'nameSpace': nameSpace,
                         'type': cmds.nodeType(item),
-                        'usedBy': [shaderName],
+                        'usedBy': [cmds.ls(shaderName, long=True)[0]],
                         'count': 1,
                         'shadingGroup': 'renderSettings',
                         'customString': '%s (1)' % shaderName,
@@ -184,20 +186,23 @@ class ShaderUtility(object):
 
         # StandIns
         for item in cmds.ls(type='aiStandIn'):
-            # Check for namespace:
+
+            # Checking for namespace:
             split = str(item).split('|')[-1].split(':')
             if len(split) == 1: # no namespace
                 shaderName = split[0]
                 nameSpace = ''
             if len(split) > 1:
-                shaderName = shaderName = str(item).split('|')[-1].split(':')[-1]
                 nameSpace = shaderName = str(item).split('|')[-1].split(':')[0]
+                shaderName = shaderName = str(item).split('|')[-1].split(':')[-1]
+            if len(nameSpace) >= 1:
+                shaderName = '%s:%s' % (nameSpace, shaderName)
 
-            self.data['%s%s' % (nameSpace, shaderName)] = {
+            self.data[shaderName] = {
                 'name':shaderName,
                 'nameSpace': nameSpace,
                 'type': cmds.nodeType(item),
-                'usedBy': [shaderName],
+                'usedBy': [cmds.ls(shaderName, long=True)[0]],
                 'count': 1,
                 'shadingGroup': 'renderSettings',
                 'customString': '%s (1)' % shaderName,

@@ -379,6 +379,7 @@ def getShaderOverrideMode(shaderName):
                         return mode
                     else:
                         return False
+
 def setShaderOverrideMode(query=False):
     """
         Set's the UI according to the current shader override mode.
@@ -1323,18 +1324,19 @@ def rsShaderScrollList_onSelect(*args):
     Update setModes and current selection
     """
 
+    global currentSelection
+
     sel = getListSelection()
-    # ls = cmds.textScrollList('rsShaderScrollList', query=True, allItems=True)
     _currentSelection = []
 
     for s in sel:
         shaderName = rsShaderUtility.customStringToShaderName(s)
-        if rsShaderUtility.data[shaderName]['standIn'] is not True:
+        if (rsShaderUtility.data[shaderName]['standIn'] is False) and (rsShaderUtility.data[shaderName]['environment'] is False):
             window.gwCustomRenamer.setOptionMenu1(value=shaderName.split('_')[0])
             window.gwCustomRenamer.setOptionMenu2(value=shaderName.split('_')[1])
 
         _currentSelection.append(shaderName)
-    currentSelection=_currentSelection
+    currentSelection = _currentSelection
 
     setPropertyOverridesMode()
     setShaderOverrideMode()
@@ -2571,6 +2573,8 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
         global rsUtility
         global rsShaderUtility
+        global currentSelection
+        global propertyOverridesMode
 
 
         # Pause qt draw temporarily
@@ -2697,7 +2701,7 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
         # Re-Set selected items from saved selection.
         matches = set([])
-        global currentSelection
+
         if currentSelection is not None:
             matches = set(currentSelection).intersection(set(cleanList))
 
@@ -2720,7 +2724,6 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         windowStyle.apply(windowStyle)
 
         # Checkboxes
-        global propertyOverridesMode
         propertyOverridesMode = setPropertyOverridesMode()
 
         # Shader Overrides
