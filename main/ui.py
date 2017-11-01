@@ -1331,7 +1331,13 @@ def rsShaderScrollList_onSelect(*args):
 
     for s in sel:
         shaderName = rsShaderUtility.customStringToShaderName(s)
-        if (rsShaderUtility.data[shaderName]['standIn'] is False) and (rsShaderUtility.data[shaderName]['environment'] is False):
+        if (rsShaderUtility.data[shaderName]['standIn'] is False):
+            pass
+        elif (rsShaderUtility.data[shaderName]['light'] is False):
+            pass
+        elif (rsShaderUtility.data[shaderName]['environment'] is False):
+            pass
+        else:
             window.gwCustomRenamer.setOptionMenu1(value=shaderName.split('_')[0])
             window.gwCustomRenamer.setOptionMenu2(value=shaderName.split('_')[1])
 
@@ -2841,19 +2847,13 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
 
 
         # Check weather the shader is in part of the ShaderUtility.
-        # I noticed sometimes with updateUI there is a ltency whilst the shaderUtility updates,
+        # I noticed sometimes with updateUI there is a latency whilst the shaderUtility updates,
         # hence I get paint errors.
         try:
             rsShaderUtility.data[rsShaderUtility.customStringToShaderName(item)]
         except:
             return False
 
-        # Check if item is an environment shader
-        try:
-            isEnvironment = rsShaderUtility.data[rsShaderUtility.customStringToShaderName(item)]['environment']
-        except:
-            isEnvironment = False
-            print '# Error getting environment attribute for %s #' % item
 
         # Getting information about the item
         shaderName = rsShaderUtility.customStringToShaderName(value, properties=False)
@@ -2874,14 +2874,14 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
 
             if option.state & QtWidgets.QStyle.State_Selected:
                 painter.setBrush(QtGui.QBrush(QtGui.QColor(82,133,166)))
-                painter.drawRect(option.rect)
             else:
-                if isEnvironment:
-                    painter.setBrush(QtGui.QBrush(QtGui.QColor(82,92,102)))
-                    painter.drawRect(option.rect)
+                if rsShaderUtility.data[shaderName]['environment']:
+                    painter.setBrush(QtGui.QBrush(QtGui.QColor(70,70,90)))
+                elif rsShaderUtility.data[shaderName]['light']:
+                    painter.setBrush(QtGui.QBrush(QtGui.QColor(150,100,50)))
                 else:
                     painter.setBrush(QtGui.QBrush(QtGui.QColor(82,82,82)))
-                    painter.drawRect(option.rect)
+            painter.drawRect(option.rect)
 
             painter.setBrush(QtGui.QBrush(QtGui.QColor(255,170,100)))
             painter.drawRect(
@@ -2944,7 +2944,7 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
             # Draw warning icon
             if '!!' in attr:
                 QIcon = QtGui.QImage(self.warningIcon)
-                if isEnvironment is False:
+                if rsShaderUtility.data[shaderName]['environment'] is False:
                     painter.drawImage(
                         QtCore.QPoint(
                             (self.__class__.FONT_PIXEL_SIZE_OFFSET / 2) * 3,
@@ -3010,15 +3010,15 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
         if rsShaderUtility.isActive(item) is False:
             if option.state & QtWidgets.QStyle.State_Selected:
                 painter.setBrush(QtGui.QBrush(QtGui.QColor(82,133,166)))
-                painter.drawRect(option.rect)
             else:
-                if isEnvironment:
-                    painter.setBrush(QtGui.QBrush(QtGui.QColor(55,67,77)))
-                    painter.drawRect(option.rect)
+                if rsShaderUtility.data[shaderName]['environment']:
+                    painter.setBrush(QtGui.QBrush(QtGui.QColor(40,40,70)))
+                elif rsShaderUtility.data[shaderName]['light']:
+                    painter.setBrush(QtGui.QBrush(QtGui.QColor(65,65,35)))
                 else:
                     painter.setBrush(QtGui.QBrush(QtGui.QColor(55,55,55)))
-                    painter.drawRect(option.rect)
 
+            painter.drawRect(option.rect)
 
 
             # Draw namespace

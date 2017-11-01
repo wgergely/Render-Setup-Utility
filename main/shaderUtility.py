@@ -109,6 +109,18 @@ class ShaderUtility(object):
         'aiFog',
         'aiVolumeScattering'
     )
+    LIGHT_NODES = ( # from aiOption
+        'aiAreaLight',
+        'aiSkyDomeLight',
+        'aiMeshLight',
+        'aiSky',
+        'aiPhotometricLight',
+        'aiLightPortal',
+        'directionalLight',
+        'pointLight',
+        'spotLight',
+        'areaLight'
+    )
 
     def __init__(self):
         self.data = {}
@@ -148,7 +160,8 @@ class ShaderUtility(object):
                             'customString': '',
                             'environment': False,
                             'standIn': False,
-                            'autoConnect': None
+                            'light': False,
+                            'autoConnect': False
                         }
             if shaderName is not None:
                 for connection in cmds.sets(shEngine, q=True):
@@ -157,8 +170,7 @@ class ShaderUtility(object):
                     self.data[shaderName]['count'] = len(self.data[shaderName]['usedBy'])
 
         # Environment nodes
-        for item in cmds.ls(dagObjects=True, shapes=True, long=True):
-                if cmds.nodeType(item) in self.ENVIRONMENT_NODES:
+        for item in [f for f in cmds.ls(dagObjects=True, shapes=True, long=True) if cmds.nodeType(f) in self.ENVIRONMENT_NODES]:
 
                     # Checking for namespace:
                     split = str(item).split('|')[-1].split(':')
@@ -181,7 +193,8 @@ class ShaderUtility(object):
                         'customString': '%s (1)' % shaderName,
                         'environment': True,
                         'standIn': False,
-                        'autoConnect': None
+                        'light': False,
+                        'autoConnect': False
                     }
 
         # StandIns
@@ -208,7 +221,36 @@ class ShaderUtility(object):
                 'customString': '%s (1)' % shaderName,
                 'environment': False,
                 'standIn': True,
-                'autoConnect': None
+                'light': False,
+                'autoConnect': False
+            }
+
+        # Lights
+        for item in [f for f in cmds.ls(dagObjects=True, shapes=True, long=True) if cmds.nodeType(f) in self.LIGHT_NODES]:
+
+            # Checking for namespace:
+            split = str(item).split('|')[-1].split(':')
+            if len(split) == 1: # no namespace
+                shaderName = split[0]
+                nameSpace = ''
+            if len(split) > 1:
+                nameSpace = shaderName = str(item).split('|')[-1].split(':')[0]
+                shaderName = shaderName = str(item).split('|')[-1].split(':')[-1]
+            if len(nameSpace) >= 1:
+                shaderName = '%s:%s' % (nameSpace, shaderName)
+
+            self.data[shaderName] = {
+                'name':shaderName,
+                'nameSpace': nameSpace,
+                'type': cmds.nodeType(item),
+                'usedBy': [cmds.ls(shaderName, long=True)[0]],
+                'count': 1,
+                'shadingGroup': 'renderSettings',
+                'customString': '%s (1)' % shaderName,
+                'environment': False,
+                'standIn': False,
+                'light': True,
+                'autoConnect': False
             }
 
     def update(self):
