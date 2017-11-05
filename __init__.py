@@ -7,3 +7,9 @@ __modified__ = "01/11/2017"
 __maintainer__ = "Gergely Wootsch"
 __email__ = "hello@gergely-wootsch.com"
 __status__ = "Production"
+
+
+def show():
+    import main.ui as ui
+    reload(ui)
+    ui.createUI()

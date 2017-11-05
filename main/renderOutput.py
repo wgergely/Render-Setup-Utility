@@ -3,6 +3,9 @@ import os
 import re
 
 import RenderSetupUtility.main.utilities as util
+import RenderSetupUtility.main.ui as ui
+
+windowID = ui.windowID
 
 OUTPUT_TEMPLATES = (
     'Not set',
@@ -94,7 +97,7 @@ class RenderOutput(object):
     def pathStr(self, renderLayer, long=False):
         ROOT = cmds.workspace(query=True, rootDirectory=True)
         IMAGES = 'images'
-        version = cmds.optionMenu('rsuWindow_optionMenu04', query=True, value=True)
+        version = cmds.optionMenu('%s_optionMenu04' % (windowID), query=True, value=True)
         if ROOT:
             self.currentTemplate = cmds.getAttr('%s.imageFilePrefix' % DEFAULTS_NODE)
             if self.currentTemplate:
