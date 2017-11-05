@@ -3,9 +3,8 @@ import os
 import re
 
 import RenderSetupUtility.main.utilities as util
-import RenderSetupUtility.main.ui as ui
 
-windowID = ui.windowID
+windowID = 'RenderSetupUtilityWindow'
 
 OUTPUT_TEMPLATES = (
     'Not set',
