@@ -553,10 +553,32 @@ class ShaderUtility(object):
     def getShaderGroups(self, excludeSolo=False):
         """Returns shader name groups"""
 
-        matList = self.getShaderList(excludeUnused=False, excludeOverrides=True)
 
         d = {}
-        for string in matList:
+
+        self.getShaderList(excludeOverrides=True, excludeUnused=True)
+
+        # Empty
+        group = d.setdefault('', [])
+        group.append('')
+
+
+        for shaderName in self.data.keys():
+            if self.data[shaderName]['light']:
+                group = d.setdefault('<Lights>', [])
+                group.append(shaderName)
+            if self.data[shaderName]['environment']:
+                group = d.setdefault('<Environment>', [])
+                group.append(shaderName)
+            if self.data[shaderName]['shader']:
+                group = d.setdefault('<Shaders>', [])
+                group.append(shaderName)
+            if self.data[shaderName]['standIn']:
+                group = d.setdefault('<StandIns>', [])
+                group.append(shaderName)
+
+        # Shaders
+        for string in self.shaderList:
             if '_' in string:
                 prefix, suffix = map(str.strip, str(string).split("_", 1))
                 group = d.setdefault(prefix, [])
@@ -567,6 +589,7 @@ class ShaderUtility(object):
             for key in dCopy:
                 if len(dCopy[key]) <= 1:
                     d.pop(key, None)
+
         return d
 
     def getShaderList(self, excludeOverrides=False, excludeUnused=False):
