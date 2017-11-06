@@ -11,5 +11,4 @@ __status__ = "Production"
 
 def show():
     import main.ui as ui
-    reload(ui)
     ui.createUI()
