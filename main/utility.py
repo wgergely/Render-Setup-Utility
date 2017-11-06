@@ -63,14 +63,16 @@ class Utility(object):
 
         def addLayer(inName):
             lyrs = self.renderSetup.getRenderLayers()
+
             if isinstance(inName, basestring):
                 for lyr in lyrs:
                     if lyr.name() == inName:
                         print(inName + ' exists already. Skipping.')
-                        self._extendActiveLayer(lyr, valid = True)
+                        self._extendActiveLayer(lyr, valid=True)
                         return self.activeLayer
                 l = self.renderSetup.createRenderLayer(inName)
                 self._extendActiveLayer(l, valid=True)
+
                 self.switchLayer(inName)
 
                 lr = l.renderSettingsCollectionInstance()
@@ -86,26 +88,30 @@ class Utility(object):
                 self._extendActiveCollection(c, valid=True)
 
                 return self.activeLayer
-        def switchLayer(inValue):
+
+        def switchLayer(inValue, switchLayer=False):
             lyrs = self.renderSetup.getRenderLayers()
+
+
             if inValue == self.defaultName:
-                self.renderSetup.switchToLayer()
-            if isinstance(inValue, basestring):
-                try:
+                l = self.renderSetup.getDefaultRenderLayer()
+                if switchLayer:
+                    self.renderSetup.switchToLayer(l)
+                self._extendActiveLayer(l, valid=True)
+                return self.activeLayer
+            else:
+                if isinstance(inValue, basestring):
                     l = self.renderSetup.getRenderLayer(inValue)
-                    self.renderSetup.switchToLayer(l)
-                    self._extendActiveLayer(l, valid = True)
+                    if switchLayer:
+                        self.renderSetup.switchToLayer(l)
+                    self._extendActiveLayer(l, valid=True)
                     return self.activeLayer
-                except:
-                    print('Couldn\'t switch layer.')
-            if type(inValue) is int:
-                try:
+                elif type(inValue) is int:
                     l = lyrs[inValue]
-                    self.renderSetup.switchToLayer(l)
-                    self._extendActiveLayer(l, valid = True)
+                    if switchLayer:
+                        self.renderSetup.switchToLayer(l)
+                    self._extendActiveLayer(l, valid=True)
                     return self.activeLayer
-                except:
-                    print('Couldn\'t switch layer.')
 
         def _collection(inValue=None, isQuery=False, addOverrides=True):
             """
@@ -152,7 +158,7 @@ class Utility(object):
                         print('Collection \'' + coll.name() + '\' already exists in \'' + self.activeLayer.name() + '\'')
                         return None
                 c = l.createCollection(inValue)
-                self._extendActiveCollection(c,valid = True)
+                self._extendActiveCollection(c,valid=True)
 
                 # Add overrides
                 if addOverrides is True:
@@ -247,7 +253,7 @@ class Utility(object):
                     print('Couldn\'t get override attribute value.')
                     return None
 
-        def _extendActiveLayer(inLayer = None, valid = True):
+        def _extendActiveLayer(inLayer = None, valid=True):
             if inLayer.name() == self.defaultName:
                 self.activeLayer = self.defaultLayer
                 self.activeLayer.switchLayer = switchLayer
@@ -264,7 +270,8 @@ class Utility(object):
                 self.activeLayer.removeCollection = removeCollection
             else:
                 self.activeLayer = None
-        def _extendActiveCollection(inCollection = None, valid = True):
+            return self.activeLayer
+        def _extendActiveCollection(inCollection = None, valid=True):
             if valid:
                 self.activeCollection = inCollection
                 self.activeCollection.overrides = overrides
@@ -349,6 +356,7 @@ class Utility(object):
         self.setSelection = setSelection
         self.removeSelection = removeSelection
         self.overrides = overrides
+
         # Set activeLayer on init
         self._extendActiveLayer(self.renderSetup.getVisibleRenderLayer(), valid=True)
     # Methods
@@ -377,7 +385,7 @@ class Utility(object):
                 self._extendActiveLayer(lyrs[inValue], valid=True)
                 return self.activeLayer
             except:
-                self._extendActiveLayer(inLayer = None, valid = False)
+                self._extendActiveLayer(inLayer = None, valid=False)
                 print('Couldn\'t get render layer of that index.')
                 return self.activeLayer
         # Return by name
@@ -387,7 +395,7 @@ class Utility(object):
             for l in lyrs:
                 if l.name() == inValue:
                     found = True
-                    self._extendActiveLayer(l, valid = True)
+                    self._extendActiveLayer(l, valid=True)
                     return self.activeLayer
             if found is False:
                 self.addLayer(inValue)

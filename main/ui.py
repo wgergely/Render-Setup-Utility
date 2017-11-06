@@ -34,7 +34,7 @@ FRAME_MARGIN = (12,12)
 SCROLLBAR_THICKNESS = 12
 ACTIVEITEM_PREFIX = ' '
 COLLECTION_SUFFIX = '_collection'
-MIN_NUMBER_OF_ROWS = 3
+MIN_NUMBER_OF_ROWS = 6
 MAX_NUMBER_OF_ROWS = 12
 
 windowID            = 'RenderSetupUtilityWindow'
@@ -55,6 +55,7 @@ global selectedShaderOverride
 global overrideShader
 global cmd
 global rsUtility
+rsUtility = utility.Utility()
 global rsRenderOutput
 global rsShaderUtility
 global window
@@ -116,7 +117,7 @@ def resetOptionMenu(inName, inValue, rl=True):
         cmds.deleteUI(item)
     # Add default render layer to menu
     if rl:
-        cmds.menuItem(rsUtility.defaultName, label = rsUtility.defaultName, p = inName, enable = True)
+        cmds.menuItem(rsUtility.defaultName, label = rsUtility.defaultName, p = inName, enable=True)
     for item in inValue:
         try:
             cmds.menuItem(item, label=item, p=inName)
@@ -237,7 +238,7 @@ def setPropertyOverridesMode():
         propertyOverridesMode = False
 
         q.widget.setStyleSheet('{color: rgb(200,200,200)}')
-        q.widget.setText('Arnold property overrides')
+        q.widget.setText('Apply Arnold Property Overrides')
 
         for index, item in enumerate(rsUtility.overrideAttributes):
             cmds.checkBox('%s_checkbox' % (windowID) + str(int(index+2)).zfill(2), edit=True, enable=True)
@@ -383,7 +384,7 @@ def setShaderOverrideMode(query=False):
         selectedShaderOverride = None
         overrideShader = None
         q.widget.setStyleSheet('QLabel {color: rgb(200,200,200)}')
-        q.widget.setText('Shader overrides:')
+        q.widget.setText('Apply Shader Overrides')
         return False
 
     # Return false if any of the selected is inactive.
@@ -395,7 +396,7 @@ def setShaderOverrideMode(query=False):
             selectedShaderOverride = None
             overrideShader = None
             q.widget.setStyleSheet('QLabel {color: rgb(200,200,200); font-weight: normal;}')
-            q.widget.setText('Shader override:')
+            q.widget.setText('Apply Shader Overrides')
             return False
 
         mode = getShaderOverrideMode(shaderName)
@@ -441,18 +442,16 @@ def getListSelection():
     else:
         return sel
 
-def rsSelectLayer(arg):
-    if arg == rsUtility.renderSetup.getDefaultRenderLayer().name():
-        try:
-            rsUtility.renderSetup.switchToLayer(rsUtility.renderSetup.getDefaultRenderLayer())
-        except:
-            raise RuntimeError('Couldn\'t switch to the default render layer.')
-        window.updateUI(updateRenderSetup=True)
-    else:
-        rsUtility.switchLayer(arg)
-        window.updateUI(updateRenderSetup=True)
-        return arg
-cmd['rsSelectLayer'] = rsSelectLayer
+def rsSelectActiveLayer(arg):
+    print arg
+    print rsUtility.switchLayer(arg, switchLayer=False)
+    window.updateUI(updateRenderSetup=False)
+cmd['%s_selectActiveLayer' % (windowID)] = rsSelectActiveLayer
+
+def rsSelectVisibleLayer(arg):
+    rsUtility.switchLayer(arg, switchLayer=True)
+    window.updateUI(updateRenderSetup=True)
+cmd['%s_selectVisibleLayer' % (windowID)] = rsSelectVisibleLayer
 
 def _filterInvalidInput(name):
     data = cmds.textField(
@@ -634,7 +633,7 @@ def rsAddNewLayer(item):
         if len(arg) == 0:
             cmds.button('rsuNewLayerWindow_button01', edit = True, enable = False)
         else:
-            cmds.button('rsuNewLayerWindow_button01', edit = True, enable = True)
+            cmds.button('rsuNewLayerWindow_button01', edit = True, enable=True)
 
     cmds.columnLayout('rsuNewLayerWindow_columnLayout01',
         parent = windowNewLayerID,
@@ -658,7 +657,7 @@ def rsAddNewLayer(item):
     x = globalPos.x()+28
     y = globalPos.y()
     q.widget.move(x, y)
-cmd['rsAddNewLayer'] = rsAddNewLayer
+cmd['%s_addNewLayer' % (windowID)] = rsAddNewLayer
 
 def rsAddCollection(arg):
     """
@@ -924,7 +923,7 @@ def rsuWindow_button12(arg):
     +1 button. Increments the version number of the output.
     """
 
-    lyr = rsUtility.renderSetup.getVisibleRenderLayer().name()
+    lyr = rsUtility.activeLayer.name()
     versions = rsRenderOutput.getVersions(lyr)
 
     if versions:
@@ -1003,7 +1002,7 @@ def makeComp(arg):
             'Path template is not set. To continue, select one of the output path templates.'
         )
 
-    LAYER_NAME = rsUtility.renderSetup.getVisibleRenderLayer().name()
+    LAYER_NAME = rsUtility.renderSetup.activeLayer.name()
     VERSION = cmds.optionMenu('%s_optionMenu04' % (windowID), query=True, value=True)
 
 
@@ -1337,10 +1336,10 @@ def rsShaderScrollList_onSelect(*args):
 
 
         _currentSelection.append(shaderName)
-    currentSelection = _currentSelection
 
     setPropertyOverridesMode()
     setShaderOverrideMode()
+    currentSelection = _currentSelection
 cmd['rsShaderScrollList_onSelect'] = rsShaderScrollList_onSelect
 
 def postMenuCommand(*args):
@@ -1383,27 +1382,6 @@ def _matList():
     for item in rsShaderUtility.data:
         matList.append(str(item))
     return util.natsort(matList)
-def _matGroups():
-    matList = _matList()
-    def groupByPrefix(strings):
-        stringsByPrefix = {}
-        for string in strings:
-            if '_' in string:
-                prefix, suffix = map(str.strip, str(string).split("_", 1))
-                if len(prefix) >= 2:
-                    group = stringsByPrefix.setdefault(prefix, [])
-                    group.append(suffix)
-        dict = stringsByPrefix.copy()
-        for key in dict:
-            if len(dict[key]) <= 1:
-                stringsByPrefix.pop(key, None)
-        return stringsByPrefix
-    groups = groupByPrefix(matList)
-    groups[''] = []
-
-    # sort dict - clunky, there must be a better way...
-    keyList = util.natsort(groups.keys())
-    return (keyList, groups)
 
 def rsuWindow_checkbox02(arg):
     _setOverrideValue(arg, 0)
@@ -1479,7 +1457,7 @@ def addRowLayout(inName, numberOfColumns,
                  columnAttach1 = '', columnAttach2 = ('',''), columnAttach3 = ('','',''), columnAttach4 = ('','','',''), columnAttach5 = ('','','','',''), columnAttach6 = ('','','','','',''),
                  columnWidth1 = 0, columnWidth2 = (0,0), columnWidth3 = (0,0,0), columnWidth4 = (0,0,0,0), columnWidth5 = (0,0,0,0,0), columnWidth6 = (0,0,0,0,0,0),
                  columnOffset1 = 0, columnOffset2 = (0,0), columnOffset3 = (0,0,0), columnOffset4 = (0,0,0,0), columnOffset5 = (0,0,0,0,0), columnOffset6 = (0,0,0,0,0,0),
-                 enable = True, visible = True):
+                 enable=True, visible = True):
     cmds.rowLayout(
         inName,
         numberOfColumns = numberOfColumns,
@@ -1522,7 +1500,7 @@ def addOptionMenu(inName, label, inArr, changeCommand, enable=True, visible=True
         alwaysCallChangeCommand = True)
     for a in inArr:
         cmds.menuItem(label = a)
-def addButton(inTitle, label, command, size=(50,21), image = None, enable = True, visible = True):
+def addButton(inTitle, label, command, size=(50,21), image = None, enable=True, visible = True):
     if image is None:
         cmds.button(
             inTitle,
@@ -1543,7 +1521,7 @@ def addButton(inTitle, label, command, size=(50,21), image = None, enable = True
             enable = enable,
             visible = visible
         )
-def addTextField(inTitle, placeholderText, enterCommand, textChangedCommand, changeCommand, enable = True, visible = True):
+def addTextField(inTitle, placeholderText, enterCommand, textChangedCommand, changeCommand, enable=True, visible = True):
     cmds.textField(
         inTitle,
         placeholderText = placeholderText,
@@ -1560,7 +1538,7 @@ def addText(inTitle, label, font='plainLabelFont'):
         label = label,
         font = font
     )
-def addSeparator(inTitle, height = 21, style = 'none', horizontal = True, enable = True, visible = True):
+def addSeparator(inTitle, height = 21, style = 'none', horizontal = True, enable=True, visible = True):
     cmds.separator(
         inTitle,
         height = height,
@@ -1569,7 +1547,7 @@ def addSeparator(inTitle, height = 21, style = 'none', horizontal = True, enable
         enable = enable,
         visible = visible
     )
-def addTextScrollList(inTitle, inArr, doubleClickCommand, selectCommand, deleteKeyCommand, enable = True, visible = True):
+def addTextScrollList(inTitle, inArr, doubleClickCommand, selectCommand, deleteKeyCommand, enable=True, visible = True):
     cmds.textScrollList(
         inTitle,
         append = inArr,
@@ -1582,7 +1560,7 @@ def addTextScrollList(inTitle, inArr, doubleClickCommand, selectCommand, deleteK
         enable = enable,
         visible = visible
     )
-def addCheckBox(inTitle, label, offCommand, onCommand, value = False, enable = True, visible = True):
+def addCheckBox(inTitle, label, offCommand, onCommand, value = False, enable=True, visible = True):
     cmds.checkBox(
         inTitle,
         label = label,
@@ -1732,8 +1710,8 @@ class CustomRenamer(object):
 
     def __init__(self, newName='untitled'):
 
-        self.windowID = '%sWindow' % (self.__class__.__name__)
-        self.windowTitle = '%sWindow' % (self.__class__.__name__)
+        self.windowID = '%sWindow' % (windowID)
+        self.windowTitle = '%sWindow' % (windowID)
 
         self.newName = newName
         global rsShaderUtility
@@ -2123,6 +2101,7 @@ class CustomRenamer(object):
         """
         Update the Custom Renamer module values
         """
+
         global window
         global rsUtility
         global rsShaderUtility
@@ -2145,6 +2124,7 @@ class CustomRenamer(object):
                 cmds.deleteUI(item)
         else:
             value = None
+
         if grps.keys() != []:
             for item in util.natsort(grps.keys()):
                 cmds.menuItem(label=item, parent='%s_optionMenu01' % (self.windowID))
@@ -2229,30 +2209,76 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
     def createUI(self):
         """
-        Main RenderSetupUtility ui function
+        Create the Render Setup Utility window
         """
 
         q.getQItem(windowID, QtWidgets.QWidget)
         cmds.setParent(q.fullPath)
 
         #################################################
-        # Render Layers
-        addFrameLayout('%s_frameLayout01' % (self.__class__.__name__), 'Current Render Layer', collapsable=False, labelVisible=False)
-        addRowLayout('%s_rowLayout01' % (self.__class__.__name__), 3,
-                        columnAlign3 = ('left','left','right'),
-                        columnAttach3 = ('left','both','right'),
-                        columnWidth3 = (((WINDOW_WIDTH)-(FRAME_MARGIN[0]*2))*0.075,
-                                        (WINDOW_WIDTH-(FRAME_MARGIN[0]*2))*0.85,
-                                        (WINDOW_WIDTH-(FRAME_MARGIN[0]*2))*0.075))
-        addButton('rsAddNewLayer', 'New', cmd['rsAddNewLayer'], image='RS_create_layer', size=(21,21))
-        addOptionMenu('rsSelectLayer','', (), cmd['rsSelectLayer'])
+        # Active Render Layer
+        cmds.separator(
+            height=12,
+            style='none'
+        )
+        addFrameLayout(
+            '%s_frameLayout01' % (windowID),
+            'Visible Render Layer',
+            collapsable=False,
+            labelVisible=False,
+            marginHeight=0
+        )
+        addRowLayout(
+            '%s_rowLayout01' % (windowID), 3,
+            columnAlign3 = ('left','left','right'),
+            columnAttach3 = ('left','both','right'),
+            columnWidth3 = (
+                (WINDOW_WIDTH-(FRAME_MARGIN[0]*2))*0.075,
+                (WINDOW_WIDTH-(FRAME_MARGIN[0]*2))*0.85,
+                (WINDOW_WIDTH-(FRAME_MARGIN[0]*2))*0.075)
+        )
+        addButton('%s_addNewLayer' % (windowID), 'New', cmd['%s_addNewLayer' % (windowID)], image='RS_create_layer', size=(21,21))
+        addOptionMenu('%s_selectActiveLayer' % (windowID), 'Active Layer    ', (), cmd['%s_selectActiveLayer' % (windowID)])
         addButton('rsOpenRenderSetupWindow', 'Edit', cmd['rsOpenRenderSetupWindow'], image='render_setup.png', size=(21,21))
+
+        #################################################
+        # Work Render Layers
+        cmds.setParent(q.fullPath)
+        addFrameLayout(
+            '%s_frameLayout01B' % (windowID),
+            'Work Render Layer',
+            collapsable=False,
+            labelVisible=False,
+            marginHeight=0
+        )
+        addRowLayout(
+            '%s_rowLayout01B' % (windowID), 3,
+            columnAlign3 = ('left','left','right'),
+            columnAttach3 = ('left','both','right'),
+            columnWidth3 = (
+                (WINDOW_WIDTH-(FRAME_MARGIN[0]*2))*0.075,
+                (WINDOW_WIDTH-(FRAME_MARGIN[0]*2))*0.85,
+                (WINDOW_WIDTH-(FRAME_MARGIN[0]*2))*0.075
+            )
+        )
+        cmds.separator()
+        addOptionMenu('%s_selectVisibleLayer' % (windowID), 'Visible Layer   ', (), cmd['%s_selectVisibleLayer' % (windowID)])
+        cmds.separator()
+
+        cmds.setParent(q.fullPath)
+        cmds.separator(height=12, style='none')
+
         #################################################
         # Collections
-        cmds.setParent(q.fullPath)
-        addFrameLayout('%s_frameLayout02' % (self.__class__.__name__), 'Add Collections', labelVisible=False)
+        addFrameLayout(
+            '%s_frameLayout02' % (windowID),
+            'Collections',
+            labelVisible=False,
+            marginHeight=0
+        )
+
         addRowLayout(
-            '%s_rowLayout02' % (self.__class__.__name__), 6,
+            '%s_rowLayout02' % (windowID), 6,
             columnAlign6 = ('left','left','left','left','left','left'),
             columnAttach6 = ('both','both','right','right','right','right'),
             columnWidth6 = (
@@ -2273,21 +2299,24 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
         ############################
         # Filter List
-        cmds.setParent('%s|%s_frameLayout02' % (q.fullPath, self.__class__.__name__))
+        cmds.setParent('%s_frameLayout02' % (windowID))
         addRowLayout('%s_rowLayout03' % (windowID), 2,
-            columnAlign2 = ('left', 'right'),
+            columnAlign2 = ('left', 'left'),
             columnAttach2 = ('both', 'both'),
-            columnWidth2 = ((WINDOW_WIDTH-(FRAME_MARGIN[0]*2))*0.65, (WINDOW_WIDTH-(FRAME_MARGIN[0]*2))*0.35))
+            columnWidth2 = (
+                (WINDOW_WIDTH-(FRAME_MARGIN[0]*2))*0.6,
+                (WINDOW_WIDTH-(FRAME_MARGIN[0]*2))*0.42
+            )
+        )
         addTextField('%s_filterShaderList' % (windowID), 'Search', cmd['%s_filterShaderList' % (windowID)], cmd['rsFilterShaderList_off'], cmd['%s_filterShaderList' % (windowID)])
-        addOptionMenu('rsShaderGroups', '', (), cmd['rsShaderGroups'])
-
+        addOptionMenu('rsShaderGroups', '|', (), cmd['rsShaderGroups'])
 
         ############################
         # The shaders scroll list
 
-        cmds.setParent('%s|%s_frameLayout02' % (q.fullPath, self.__class__.__name__))
+        cmds.setParent('%s_frameLayout02' % (windowID))
         addRowLayout(
-            '%s_rowLayout04' % (self.__class__.__name__), 1,
+            '%s_rowLayout04' % (windowID), 1,
             columnAlign1 = 'left',
             columnAttach1 = 'both',
             columnWidth1 = WINDOW_WIDTH-(FRAME_MARGIN[0])
@@ -2314,7 +2343,7 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         ###################################################
         # Arnold Property Overrides
 
-        cmds.setParent('%s|%s_frameLayout02' % (q.fullPath, self.__class__.__name__))
+        cmds.setParent('%s_frameLayout02' % (windowID))
         cmds.columnLayout(
             '%s_columnLayout20' % (windowID),
             width=WINDOW_WIDTH-(FRAME_MARGIN[0]*2),
@@ -2323,16 +2352,18 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             adjustableColumn=False,
             rowSpacing=0
         )
+
         cmds.separator(
             parent='%s_columnLayout20' % (windowID),
             height=4,
             style='none'
         )
+
         addRowLayout('%s_rowLayout05' % (windowID), 2,
                         columnAlign2 = ('left','both'),
                         columnAttach2 = ('left','right'),
                         columnWidth2 = ((WINDOW_WIDTH-(FRAME_MARGIN[0]*2))*0.75, (WINDOW_WIDTH-(FRAME_MARGIN[0]*2))*0.25))
-        addText('%s_text01' % (windowID), 'Arnold Property Overrides', 'plainLabelFont')
+        addText('%s_text01' % (windowID), 'Apply Arnold Property Overrides', 'plainLabelFont')
         addCheckBox('rsArnoldPropertyOverridesCheckBox', '', cmd['rsArnoldPropertyOverridesCheckBox'], cmd['rsArnoldPropertyOverridesCheckBox'])
         cmds.separator(
             parent='%s_columnLayout20' % (windowID),
@@ -2367,7 +2398,7 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
         ##################################################
         # Shader Override
-        cmds.setParent('%s|%s_frameLayout02' % (q.fullPath, self.__class__.__name__))
+        cmds.setParent('%s_frameLayout02' % (windowID))
         cmds.columnLayout(
             '%s_columnLayout21' % (windowID),
             width=WINDOW_WIDTH-(FRAME_MARGIN[0]*2),
@@ -2410,25 +2441,30 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         cmds.columnLayout('%s_columnLayout03' % (windowID), edit=True, visible=False)
 
         ##################################################
-        # Extras
+
         cmds.setParent(q.fullPath)
+        cmds.separator(height=10, style='none')
+        ##################################################
+        # Extras
         addFrameLayout(
-            '%s_frameLayout50' % (self.__class__.__name__),
+            '%s_frameLayout50' % (windowID),
             'Extras',
             collapsable=True,
             marginHeight=0,
-            labelVisible=True)
+            labelVisible=False
+        )
 
         ##################################################
         # Add & Assign Shader Groups
         addFrameLayout(
-            '%s_frameLayout05' % (self.__class__.__name__),
+            '%s_frameLayout05' % (windowID),
             'Add & Assign Shader Groups',
             collapsable=True,
             marginWidth=0,
             marginHeight=0,
             collapse=False,
             labelVisible=False)
+
         # Add the renamer window
         self.gwCustomRenamer = CustomRenamer()
         self.gwCustomRenamer.createUI()
@@ -2436,10 +2472,10 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         ##################################################
         # AutoConnect
 
-        cmds.setParent('%s_frameLayout50' % (self.__class__.__name__))
+        cmds.setParent('%s_frameLayout50' % (windowID))
 
         addFrameLayout(
-            '%s_frameLayout03' % (self.__class__.__name__),
+            '%s_frameLayout03' % (windowID),
             'Adobe Connector',
             collapsable=True,
             marginWidth=0,
@@ -2457,7 +2493,7 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         addButton('editTexture', 'Edit Texture', cmd['editTexture'])
 
         # After Effects
-        cmds.setParent('%s_frameLayout03' % (self.__class__.__name__))
+        cmds.setParent('%s_frameLayout03' % (windowID))
         addRowLayout(
             '%s_rowLayout11' % (windowID), 2,
             columnAlign2 = ('left','left'),
@@ -2471,9 +2507,9 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         # Render Setup /
         # Output settings
 
-        cmds.setParent('%s_frameLayout50' % (self.__class__.__name__))
+        cmds.setParent('%s_frameLayout50' % (windowID))
         addFrameLayout(
-            '%s_frameLayout04' % (self.__class__.__name__),
+            '%s_frameLayout04' % (windowID),
             'Output Settings',
             collapsable=True,
             marginWidth=0,
@@ -2489,7 +2525,7 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         )
         addButton('%s_button14' % (windowID), 'Output path not set yet', cmd['%s_button14' % (windowID)])
 
-        cmds.setParent('%s_frameLayout04' % (self.__class__.__name__))
+        cmds.setParent('%s_frameLayout04' % (windowID))
         addRowLayout(
             '%s_rowLayout09' % (windowID), 3,
             columnAlign3 = ('left','right','right'),
@@ -2507,7 +2543,7 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         cmds.setParent('%s_rowLayout09' % (windowID))
         addButton('%s_button12' % (windowID), '+1', cmd['%s_button12' % (windowID)], size=(21,21))
 
-        cmds.setParent('%s_frameLayout04' % (self.__class__.__name__))
+        cmds.setParent('%s_frameLayout04' % (windowID))
         addRowLayout(
             '%s_rowLayout10' % (windowID), 2,
             columnAlign2 = ('left','left'),
@@ -2517,7 +2553,7 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         addOptionMenu('%s_optionMenu03' % (windowID), 'Format:', (), cmd['%s_optionMenu03' % (windowID)])
         addOptionMenu('%s_optionMenu06' % (windowID),'', (), cmd['%s_optionMenu06' % (windowID)])
 
-        cmds.setParent('%s_frameLayout04' % (self.__class__.__name__))
+        cmds.setParent('%s_frameLayout04' % (windowID))
         addRowLayout(
             '%s_rowLayout12' % (windowID), 4,
             columnAlign4 = ('right','left','right','left'),
@@ -2531,11 +2567,11 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         )
 
         addText(
-            '%s_setInFrameLabel' % (self.__class__.__name__),
+            '%s_setInFrameLabel' % (windowID),
             'In Frame '
         )
         addTextField(
-            '%s_setInFrame' % (self.__class__.__name__),
+            '%s_setInFrame' % (windowID),
             '',
             setInFrame,
             setInFrame,
@@ -2543,11 +2579,11 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         )
 
         addText(
-            '%s_setOutFrameLabel' % (self.__class__.__name__),
+            '%s_setOutFrameLabel' % (windowID),
             'Out Frame '
         )
         addTextField(
-            '%s_setOutFrame' % (self.__class__.__name__),
+            '%s_setOutFrame' % (windowID),
             '',
             setOutFrame,
             setOutFrame,
@@ -2565,7 +2601,6 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         global propertyOverridesMode
 
         rsShaderUtility = shaderUtility.ShaderUtility()
-        rsUtility = utility.Utility()
 
         q.getQItem(windowID, QtWidgets.QWidget)
         q.widget.setUpdatesEnabled(False) # Pause qt draw temporarily
@@ -2583,18 +2618,33 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         # Reapply custom QT style:
         windowStyle.apply(windowStyle)
 
+
         ##############################################
-        # Render Layers
+        # Active/Visible Render Layer
         listItem = []
         currentName = rsUtility.renderSetup.getVisibleRenderLayer().name()
         for l in rsUtility.renderSetup.getRenderLayers():
             listItem.append(l.name())
 
-        q.getQItem('rsSelectLayer', QtWidgets.QWidget)
+            q.getQItem('%s_selectVisibleLayer' % (windowID), QtWidgets.QWidget)
+
+            resetOptionMenu(q.fullPath, util.natsort(listItem), rl=True)
+            selectOptionMenuItem(q.fullPath, currentName)
+
+        ##############################################
+        # Active/Visible Render Layer
+        listItem = []
+        currentName = rsUtility.activeLayer.name()
+        for l in rsUtility.renderSetup.getRenderLayers():
+            listItem.append(l.name())
+
+        q.getQItem('%s_selectActiveLayer' % (windowID), QtWidgets.QWidget)
 
         resetOptionMenu(q.fullPath, util.natsort(listItem), rl=True)
         selectOptionMenuItem(q.fullPath, currentName)
 
+        ##################
+        # Button
         if cmds.optionMenu(q.fullPath, q = True, value = True) == rsUtility.defaultName:
             q.getQItem('rsAddCollection', QtWidgets.QWidget)
             cmds.button(q.fullPath, edit=True, enable=False)
@@ -2678,21 +2728,36 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             customStrings.append(rsShaderUtility.data[shaderName]['customString'])
             cleanList.append(shaderName)
 
+
+        q.getQItem('%s_filterShaderList' % (windowID), QtWidgets.QWidget)
+        filter = cmds.textField(q.fullPath, query=True, text=True)
+        filteredList = []
+        if (filter != '<Lights>') and (filter != '<Environment>') and (filter != '<Shaders>') and (filter != '<StandIns>'):
+            filteredList = [s for s in customStrings if filter.lower() in s.lower()]
+        else:
+            if (filter == '<Lights>'):
+                filteredList = [s for s in customStrings if rsShaderUtility.data[rsShaderUtility.customStringToShaderName(s)]['light']]
+            if (filter == '<Environment>'):
+                filteredList = [s for s in customStrings if rsShaderUtility.data[rsShaderUtility.customStringToShaderName(s)]['environment']]
+            if (filter == '<Shaders>'):
+                filteredList = [s for s in customStrings if rsShaderUtility.data[rsShaderUtility.customStringToShaderName(s)]['shader']]
+            if (filter == '<StandIns>'):
+                filteredList = [s for s in customStrings if rsShaderUtility.data[rsShaderUtility.customStringToShaderName(s)]['standIn']]
+
+        q.getQItem('%s_ShaderScrollList' % (windowID), QtWidgets.QWidget)
+
+        for item in util.natsort(filteredList, filterOn=True):
+            cmds.textScrollList(q.fullPath, edit=True, append=item)
+
+
         # Re-Set selected items from saved selection.
         matches = set([])
 
         if currentSelection is not None:
             matches = set(currentSelection).intersection(set(cleanList))
-
-        q.getQItem('%s_filterShaderList' % (windowID), QtWidgets.QWidget)
-        filter = cmds.textField(q.fullPath, query=True, text=True)
-
-        filteredList = [s for s in customStrings if filter.lower() in s.lower()]
-        q.getQItem('%s_ShaderScrollList' % (windowID), QtWidgets.QWidget)
-        for item in util.natsort(filteredList, filterOn=True):
-            cmds.textScrollList(q.fullPath, edit=True, append=item)
         for match in matches:
             cmds.textScrollList(q.fullPath, edit=True, selectItem=rsShaderUtility.data[match]['customString'])
+
         # Set height
         _setTextScrollListVisibleItemNumber()
 
@@ -2713,7 +2778,7 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
         ##############################################
         # Filter list
-        resetOptionMenu('rsShaderGroups', _matGroups()[0], rl=False)
+        resetOptionMenu('rsShaderGroups', util.natsort(rsShaderUtility.getShaderGroups().keys()), rl=False)
         filterListText = cmds.textField('%s_filterShaderList' % (windowID), query=True, text=True)
         selectOptionMenuItem('rsShaderGroups', filterListText, rl=False)
 
@@ -2751,12 +2816,12 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
         # In and out frames:
         cmds.textField(
-            '%s_setInFrame' % (self.__class__.__name__),
+            '%s_setInFrame' % (windowID),
             edit=True,
             text=int(cmds.getAttr('defaultRenderGlobals.startFrame'))
         )
         cmds.textField(
-            '%s_setOutFrame' % (self.__class__.__name__),
+            '%s_setOutFrame' % (windowID),
             edit=True,
             text=int(cmds.getAttr('defaultRenderGlobals.endFrame'))
         )
@@ -2977,9 +3042,9 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
             else:
                 painter.drawText(
                     QtCore.QRect(
-                        leadTextMargin,
+                        0,
                         option.rect.top() + self.__class__.FONT_PIXEL_SIZE_OFFSET,
-                        option.rect.width() - 18,
+                        option.rect.width() - leadRectangleWidth,
                         option.rect.height() - self.__class__.FONT_PIXEL_SIZE_OFFSET),
                     QtCore.Qt.AlignRight,
                     '{0}-{1}'.format(shaderType, attr)
@@ -3049,17 +3114,18 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
             )
 
             try:
+                # Arnold shader override and attributes
+                painter.setPen(QtGui.QPen(QtGui.QColor(150,150,150)))
+                font.setBold(False)
                 font.setPixelSize(10)
-                painter.setPen(QtGui.QPen(QtGui.QColor(210,210,210)))
                 painter.setFont(font)
-
 
                 painter.drawText(
                     QtCore.QRect(
-                        leadTextMargin,
-                        option.rect.top() + 7,
-                        option.rect.width() - 22,
-                        option.rect.height() - 7),
+                        0,
+                        option.rect.top() + self.__class__.FONT_PIXEL_SIZE_OFFSET,
+                        option.rect.width() - leadRectangleWidth,
+                        option.rect.height() - self.__class__.FONT_PIXEL_SIZE_OFFSET),
                     QtCore.Qt.AlignRight,
                     '{0}-{1}'.format(shaderType, attr[1:][:-1])
                 )
@@ -3085,7 +3151,7 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
 
     def apply(self, delegate):
         """
-        Qt: Applies custom UI.
+        Applies custom skin to the Render Setup Utility window
 
         """
 
@@ -3093,6 +3159,30 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
         window.layout().addStretch(1)
 
         q.getQItem('%s_frameLayout01' % (windowID), QtWidgets.QWidget)
+        q.widget.setStyleSheet(
+            'QWidget {\
+                padding:0;\
+                margin:0;\
+            }'
+        )
+
+        q.getQItem('%s_frameLayout02' % (windowID), QtWidgets.QWidget)
+        q.widget.setStyleSheet(
+            'QWidget {\
+                padding:0;\
+                margin:0;\
+            }'
+        )
+
+        q.getQItem('%s_rowLayout04' % (windowID), QtWidgets.QWidget)
+        q.widget.setStyleSheet(
+            'QWidget {\
+                padding:0;\
+                margin:0;\
+            }'
+        )
+
+        q.getQItem('%s_rowLayout03' % (windowID), QtWidgets.QWidget)
         q.widget.setStyleSheet(
             'QWidget {\
                 padding:0;\
@@ -3145,7 +3235,7 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
                 }'\
             )
 
-        for item in ['rsSelectLayer', '%s_optionMenu02' % (windowID), '%s_optionMenu03' % (windowID), '%s_optionMenu04' % (windowID)]:
+        for item in ['%s_selectActiveLayer' % (windowID), '%s_selectVisibleLayer' % (windowID), '%s_optionMenu02' % (windowID), '%s_optionMenu03' % (windowID), '%s_optionMenu04' % (windowID)]:
             q.getQItem(item, QtWidgets.QComboBox)
             q.widget.setStyleSheet(
                 'QComboBox {\
@@ -3261,16 +3351,12 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
         }')
 
         q.getQItem('rsShaderGroups', QtWidgets.QComboBox)
-        q.widget.setStyleSheet('QComboBox {\
-            color: rgb(150,150,150);\
-            background-color: rgb(60,60,60);\
-            border: none;\
-            border-radius: 2px;\
-            font-size:11px\
-            }\
-            QComboBox::drop-down {\
-            background-color: rgb(58,58,58);\
-            border: none;\
+        q.widget.setStyleSheet(
+            'QComboBox {\
+                color: rgb(150,150,150);\
+                background-color: rgb(60,60,60);\
+                font-size:11px\
+                }\
             }'
         )
 
@@ -3300,11 +3386,8 @@ class EventFilter(QtCore.QObject):
 
         global propertyOverridesMode
         propertyOverridesMode = False
-        # if event.type() == QtCore.QEvent.Type.WindowDeactivate:
-            # cmds.textScrollList('%s_ShaderScrollList' % (windowID), edit=True, deselectAll=True)
-            # propertyOverridesMode = setPropertyOverridesMode()
-            # setShaderOverrideMode()
-        return False
+        if event.type() == QtCore.QEvent.Type.WindowActivate:
+            # obj.updateUI(updateRenderSetup=False)
 
 def createUI():
     # Let's make sure arnold is loaded and that the arnold options are created.
@@ -3329,9 +3412,9 @@ def createUI():
     cmds.workspaceControl(RenderSetupUtilityWindow.toolName + 'WorkspaceControl', edit=True, widthProperty='free')
 
     # Event filters for the window.
-    # ef = EventFilter(window)
-    # ef.set_associated_widget(window)
-    # window.installEventFilter(ef)
+    ef = EventFilter(window)
+    ef.set_associated_widget(window)
+    window.installEventFilter(ef)
 
     window.updateUI(updateRenderSetup=False)
 
