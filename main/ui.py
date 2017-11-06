@@ -2214,7 +2214,7 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.mayaMainWindow = shiboken2.wrapInstance(long(ptr), QtWidgets.QMainWindow)
 
         self.setWindowFlags(QtCore.Qt.Window)
-        self.setWindowTitle('Hulll')
+        self.setWindowTitle('Render Setup Utility - {0}'.format('v0.5.1'))
         self.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
 
         self.setObjectName(self.__class__.toolName)
