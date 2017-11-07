@@ -2071,7 +2071,7 @@ class CustomRenamer(object):
         global window
         global rsUtility
         global rsShaderUtility
-        
+
         rsShaderUtility = shaderUtility.ShaderUtility()
         grps = rsShaderUtility.getShaderGroups()
 

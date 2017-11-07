@@ -28,15 +28,9 @@ OVERRIDE_ATTRIBUTES = (
     {'long':'visibleInReflections', 'short':'vir', 'type':OpenMaya.MFnNumericData.kBoolean, 'default':True, 'custom':('rl-','')},
     {'long':'visibleInRefractions', 'short':'vif', 'type':OpenMaya.MFnNumericData.kBoolean, 'default':True, 'custom':('rr-','')},
     {'long':'aiOpaque', 'short':'ai_opaque', 'type':OpenMaya.MFnNumericData.kBoolean, 'default':True, 'custom':('','tr-')},
-    {'long':'aiCastShadows', 'short':'ai_cast_shadows', 'type':OpenMaya.MFnNumericData.kBoolean, 'default':True, 'custom':('s-','')},
+    {'long':'castShadows', 'short':'cast_shadows', 'type':OpenMaya.MFnNumericData.kBoolean, 'default':True, 'custom':('s-','')},
     {'long':'aiSelfShadows', 'short':'ai_self_shadows', 'type':OpenMaya.MFnNumericData.kBoolean, 'default':True, 'custom':('ss-','')},
     {'long':'aiMatte', 'short':'ai_matte', 'type':OpenMaya.MFnNumericData.kBoolean, 'default':False, 'custom':('M-','')}
-)
-
-AOV_OVERRIDES = (
-	{'long':'primaryVisibility', 'short':'vis', 'type':OpenMaya.MFnNumericData.kBoolean, 'default':True, 'custom':('c-','')}, # custom is the short string to be displayed when shader is active
-
-
 )
 
 class Utility(object):

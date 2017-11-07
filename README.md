@@ -27,7 +27,8 @@ This tool gives you shortcuts to quickly add these groups to the current render 
 *The below shaders are present and assigned to a mesh in the scene. Unassigned shaders are ignored automatically:*  
 ![Screenshot](/images/renderSetupUtility_overview1.png?raw=true)
 
-*After adding the shaders to the 'house1_rsLayer' render setup layer:*  ![Screenshot](/images/renderSetupUtility_overview2.png?raw=true)
+*After adding the shaders to the 'house1_rsLayer' render setup layer:*  
+![Screenshot](/images/renderSetupUtility_overview2.png?raw=true)
 
 *It is also easy to batch add and edit Arnold property overrides and shader overrides. When overriding with a shader override displacements connected to the shading group will not be overriden. (this would require a material override, but I didn't implement this)*  
 ![Screenshot](/images/renderSetupUtility_overview3.png?raw=true "Arnold Propery Overrides")
@@ -44,7 +45,7 @@ Get the repository from GitHub and place it into the folder where your Maya.env 
 
 ```
 import sys
-sys.path.append( '/location/to/RenderSetupUtility' )
+sys.path.append( '/path/to/modules' )
 ```
 
 To launch the window:
@@ -56,4 +57,4 @@ RenderSetupUtility.show()
 
 ## Notes
 
-This is a work-in-progress utility and is there are plenty of bugs I'm sure so please take care. I haven't tested it outside my own little work environment so who knows, it might be broken.
+This is a work-in-progress module and is there are plenty of bugs. I haven't tested it outside my own little work environment so who knows, it might be broken.
