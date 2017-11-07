@@ -553,10 +553,7 @@ class ShaderUtility(object):
     def getShaderGroups(self, excludeSolo=False):
         """Returns shader name groups"""
 
-
         d = {}
-
-        self.getShaderList(excludeOverrides=True, excludeUnused=True)
 
         # Empty
         group = d.setdefault('', [])
@@ -564,6 +561,7 @@ class ShaderUtility(object):
 
 
         for shaderName in self.data.keys():
+            print shaderName
             if self.data[shaderName]['light']:
                 group = d.setdefault('<Lights>', [])
                 group.append(shaderName)
@@ -578,7 +576,7 @@ class ShaderUtility(object):
                 group.append(shaderName)
 
         # Shaders
-        for string in self.shaderList:
+        for string in self.data.keys():
             if '_' in string:
                 prefix, suffix = map(str.strip, str(string).split("_", 1))
                 group = d.setdefault(prefix, [])

@@ -1,6 +1,3 @@
-from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
-import maya.OpenMayaUI as OpenMayaUI
-import maya.api.OpenMaya as OpenMaya
 import PySide2.QtCore as QtCore
 import PySide2.QtGui as QtGui
 import PySide2.QtWidgets as QtWidgets
@@ -14,6 +11,10 @@ import base64
 import tempfile
 
 import maya.cmds as cmds
+import maya.app.renderSetup.model.renderSetup as renderSetup
+from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
+import maya.OpenMayaUI as OpenMayaUI
+import maya.api.OpenMaya as OpenMaya
 
 import RenderSetupUtility
 import RenderSetupUtility.main.utility as utility
@@ -25,6 +26,7 @@ import RenderSetupUtility.ac.autoConnect as autoConnect
 import RenderSetupUtility.ac.templates as templates
 import RenderSetupUtility.ac.psCommand as psCommand
 import RenderSetupUtility.ac.aeCommand as aeCommand
+
 
 WINDOW_WIDTH = 426
 WINDOW_HEIGHT = 150
@@ -54,47 +56,13 @@ global shaderOverrideMode
 global selectedShaderOverride
 global overrideShader
 global cmd
+
 global rsUtility
-rsUtility = utility.Utility()
+
 global rsRenderOutput
 global rsShaderUtility
 global window
 global windowStyle
-
-global DagObjectCreatedID
-global NameChangedID
-global SceneOpenedID
-global SceneImportedID
-global SceneSegmentChangedID
-
-# Callbacks
-def _DagObjectCreatedCB(clientData):
-    def update():
-        clientData.updateUI(updateRenderSetup=False)
-    cmds.evalDeferred(update)
-def _NameChangedCB(clientData):
-    def update():
-        clientData.updateUI(updateRenderSetup=False)
-    cmds.evalDeferred(update)
-def _SceneOpenedCB(clientData):
-    def update():
-        clientData.updateUI(updateRenderSetup=False)
-    cmds.evalDeferred(update)
-def _SceneImportedCB(clientData):
-    def update():
-        clientData.updateUI(updateRenderSetup=False)
-    cmds.evalDeferred(update)
-def _SceneSegmentChangedCB(clientData):
-    def update():
-        clientData.updateUI(updateRenderSetup=False)
-    cmds.evalDeferred(update)
-
-def _removeCallbacks():
-    OpenMaya.MEventMessage.removeCallback(DagObjectCreatedID)
-    OpenMaya.MEventMessage.removeCallback(NameChangedID)
-    OpenMaya.MEventMessage.removeCallback(SceneOpenedID)
-    OpenMaya.MEventMessage.removeCallback(SceneImportedID)
-    OpenMaya.MEventMessage.removeCallback(SceneSegmentChangedID)
 
 currentSelection = None
 propertyOverridesMode = False
@@ -102,6 +70,8 @@ shaderOverrideMode = False
 selectedShaderOverride = None
 overrideShader = None
 cmd = {}
+
+rsUtility = utility.Utility()
 rsRenderOutput = renderOutput.RenderOutput()
 
 # Helper functions
@@ -791,7 +761,6 @@ def rsRenameShader(arg):
         _currentSelection = []
         currentSelection = _currentSelection.append(shaderName)
 
-        rsShaderUtility = shaderUtility.ShaderUtility()
         window.updateUI()
         cmds.deleteUI(windowRenameID, window=True)
 
@@ -1002,9 +971,8 @@ def makeComp(arg):
             'Path template is not set. To continue, select one of the output path templates.'
         )
 
-    LAYER_NAME = rsUtility.renderSetup.activeLayer.name()
+    LAYER_NAME = renderSetup.instance().activeLayer.name()
     VERSION = cmds.optionMenu('%s_optionMenu04' % (windowID), query=True, value=True)
-
 
     # LOOP THROUGH AOVS
     for aov in rsRenderOutput._getAOVs():
@@ -1714,8 +1682,6 @@ class CustomRenamer(object):
         self.windowTitle = '%sWindow' % (windowID)
 
         self.newName = newName
-        global rsShaderUtility
-        rsShaderUtility = shaderUtility.ShaderUtility()
         self.shaderType = 'aiStandard'
 
         self.optionMenu1Sel = None
@@ -2105,7 +2071,8 @@ class CustomRenamer(object):
         global window
         global rsUtility
         global rsShaderUtility
-
+        
+        rsShaderUtility = shaderUtility.ShaderUtility()
         grps = rsShaderUtility.getShaderGroups()
 
         def selectOptionMenuItem(optionMenu, value):
@@ -2622,8 +2589,8 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         ##############################################
         # Active/Visible Render Layer
         listItem = []
-        currentName = rsUtility.renderSetup.getVisibleRenderLayer().name()
-        for l in rsUtility.renderSetup.getRenderLayers():
+        currentName = renderSetup.instance().getVisibleRenderLayer().name()
+        for l in renderSetup.instance().getRenderLayers():
             listItem.append(l.name())
 
             q.getQItem('%s_selectVisibleLayer' % (windowID), QtWidgets.QWidget)
@@ -2635,7 +2602,7 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         # Active/Visible Render Layer
         listItem = []
         currentName = rsUtility.activeLayer.name()
-        for l in rsUtility.renderSetup.getRenderLayers():
+        for l in renderSetup.instance().getRenderLayers():
             listItem.append(l.name())
 
         q.getQItem('%s_selectActiveLayer' % (windowID), QtWidgets.QWidget)
@@ -3369,7 +3336,7 @@ class EventFilter(QtCore.QObject):
     https://github.com/shotgunsoftware/tk-maya/blob/master/python/tk_maya/panel_util.py
     """
 
-    def set_associated_widget(self, widget_id):
+    def setAssociatedWidget(self, widget_id):
         """
         Set the widget to effect
         """
@@ -3387,39 +3354,74 @@ class EventFilter(QtCore.QObject):
         global propertyOverridesMode
         propertyOverridesMode = False
         if event.type() == QtCore.QEvent.Type.WindowActivate:
+            pass
             # obj.updateUI(updateRenderSetup=False)
 
-def createUI():
+
+
+global _cbs
+_cbs = []
+
+def _cb_kBeforeNew(clientData):
+    import maya.utils as mUtils
+    global _cbs
+
+    for cb in _cbs:
+        OpenMaya.MSceneMessage.removeCallback(cb)
+    _cbs = []
+
+    def _del():
+        clientData.deleteInstances()
+    mUtils.executeDeferred(_del)
+
+def _cb_kBeforeOpen(clientData):
+    import maya.utils as mUtils
+    global _cbs
+
+    for cb in _cbs:
+        OpenMaya.MSceneMessage.removeCallback(cb)
+    _cbs = []
+    def _del():
+        clientData.deleteInstances()
+    mUtils.executeDeferred(_del)
+
+def createUI(eventsFilters=False):
     # Let's make sure arnold is loaded and that the arnold options are created.
     import mtoa.core as core
     core.createOptions()
 
     global window
     global windowStyle
-
-    # global DagObjectCreatedID
-    # global NameChangedID
-    # global SceneOpenedID
-    # global Sc eneImportedID
-    # global SceneSegmentChangedID
+    global _cbs
 
     window = RenderSetupUtilityWindow()
 
     window.show(dockable=True)
     window.createUI()
+
     windowStyle = WindowStyle(parent=window)
 
-    cmds.workspaceControl(RenderSetupUtilityWindow.toolName + 'WorkspaceControl', edit=True, widthProperty='free')
+    cmds.workspaceControl(RenderSetupUtilityWindow.toolName + 'WorkspaceControl', edit=True, widthProperty='fixed')
 
     # Event filters for the window.
-    ef = EventFilter(window)
-    ef.set_associated_widget(window)
-    window.installEventFilter(ef)
+    if eventsFilters:
+        ef = EventFilter(window)
+        ef.setAssociatedWidget(window)
+        window.installEventFilter(ef)
+
+    if len(_cbs) == 0:
+        cb_kBeforeNew = OpenMaya.MSceneMessage.addCallback(
+            OpenMaya.MSceneMessage.kBeforeNew,
+            _cb_kBeforeNew,
+            clientData=window
+        )
+        _cbs.append(cb_kBeforeNew)
+
+        cb_kBeforeOpen = OpenMaya.MSceneMessage.addCallback(
+            OpenMaya.MSceneMessage.kBeforeOpen,
+            _cb_kBeforeOpen,
+            clientData=window
+        )
+        _cbs.append(cb_kBeforeOpen)
 
     window.updateUI(updateRenderSetup=False)
-
-    # DagObjectCreatedID = OpenMaya.MEventMessage.addEventCallback("DagObjectCreated", _DagObjectCreatedCB, clientData=window)
-    # NameChangedID = OpenMaya.MEventMessage.addEventCallback("NameChanged", _NameChangedCB, clientData=window)
-    # SceneOpenedID = OpenMaya.MEventMessage.addEventCallback("SceneOpened", _SceneOpenedCB, clientData=window)
-    # SceneImportedID = OpenMaya.MEventMessage.addEventCallback("SceneImported", _SceneImportedCB, clientData=window)
-    # SceneSegmentChangedID = OpenMaya.MEventMessage.addEventCallback("SceneSegmentChanged", _SceneSegmentChangedCB, clientData=window)
