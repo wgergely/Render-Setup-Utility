@@ -1,15 +1,11 @@
-import maya.app.renderSetup.model.override as override
 import maya.app.renderSetup.model.selector as selector
 import maya.app.renderSetup.model.collection as collection
-import maya.app.renderSetup.model.renderLayer as renderLayer
 import maya.app.renderSetup.model.renderSetup as renderSetup
 
 import maya.api.OpenMaya as OpenMaya
 import maya.cmds as cmds
-import re
 
 import RenderSetupUtility.main.shaderUtility as shaderUtility
-import RenderSetupUtility.main.utilities as util
 
 def maya_useNewAPI():
 	"""
@@ -32,15 +28,9 @@ OVERRIDE_ATTRIBUTES = (
     {'long':'visibleInReflections', 'short':'vir', 'type':OpenMaya.MFnNumericData.kBoolean, 'default':True, 'custom':('rl-','')},
     {'long':'visibleInRefractions', 'short':'vif', 'type':OpenMaya.MFnNumericData.kBoolean, 'default':True, 'custom':('rr-','')},
     {'long':'aiOpaque', 'short':'ai_opaque', 'type':OpenMaya.MFnNumericData.kBoolean, 'default':True, 'custom':('','tr-')},
-    {'long':'aiCastShadows', 'short':'ai_cast_shadows', 'type':OpenMaya.MFnNumericData.kBoolean, 'default':True, 'custom':('s-','')},
+    {'long':'castShadows', 'short':'cast_shadows', 'type':OpenMaya.MFnNumericData.kBoolean, 'default':True, 'custom':('s-','')},
     {'long':'aiSelfShadows', 'short':'ai_self_shadows', 'type':OpenMaya.MFnNumericData.kBoolean, 'default':True, 'custom':('ss-','')},
     {'long':'aiMatte', 'short':'ai_matte', 'type':OpenMaya.MFnNumericData.kBoolean, 'default':False, 'custom':('M-','')}
-)
-
-AOV_OVERRIDES = (
-	{'long':'primaryVisibility', 'short':'vis', 'type':OpenMaya.MFnNumericData.kBoolean, 'default':True, 'custom':('c-','')}, # custom is the short string to be displayed when shader is active
-
-
 )
 
 class Utility(object):
@@ -50,19 +40,16 @@ class Utility(object):
 
     def __init__(self):
 
-        self._shaderUtility = shaderUtility.ShaderUtility()
-
-        self.renderSetup = renderSetup.instance()
         self.activeLayer = None
         self.activeCollection = None
 
-        self.defaultLayer = self.renderSetup.getDefaultRenderLayer()
+        self.defaultLayer = renderSetup.instance().getDefaultRenderLayer()
         self.defaultName = self.defaultLayer.name()
 
         self.overrideAttributes = OVERRIDE_ATTRIBUTES
 
         def addLayer(inName):
-            lyrs = self.renderSetup.getRenderLayers()
+            lyrs = renderSetup.instance().getRenderLayers()
 
             if isinstance(inName, basestring):
                 for lyr in lyrs:
@@ -70,7 +57,7 @@ class Utility(object):
                         print(inName + ' exists already. Skipping.')
                         self._extendActiveLayer(lyr, valid=True)
                         return self.activeLayer
-                l = self.renderSetup.createRenderLayer(inName)
+                l = renderSetup.instance().createRenderLayer(inName)
                 self._extendActiveLayer(l, valid=True)
 
                 self.switchLayer(inName)
@@ -90,26 +77,26 @@ class Utility(object):
                 return self.activeLayer
 
         def switchLayer(inValue, switchLayer=False):
-            lyrs = self.renderSetup.getRenderLayers()
+            lyrs = renderSetup.instance().getRenderLayers()
 
 
             if inValue == self.defaultName:
-                l = self.renderSetup.getDefaultRenderLayer()
+                l = renderSetup.instance().getDefaultRenderLayer()
                 if switchLayer:
-                    self.renderSetup.switchToLayer(l)
+                    renderSetup.instance().switchToLayer(l)
                 self._extendActiveLayer(l, valid=True)
                 return self.activeLayer
             else:
                 if isinstance(inValue, basestring):
-                    l = self.renderSetup.getRenderLayer(inValue)
+                    l = renderSetup.instance().getRenderLayer(inValue)
                     if switchLayer:
-                        self.renderSetup.switchToLayer(l)
+                        renderSetup.instance().switchToLayer(l)
                     self._extendActiveLayer(l, valid=True)
                     return self.activeLayer
                 elif type(inValue) is int:
                     l = lyrs[inValue]
                     if switchLayer:
-                        self.renderSetup.switchToLayer(l)
+                        renderSetup.instance().switchToLayer(l)
                     self._extendActiveLayer(l, valid=True)
                     return self.activeLayer
 
@@ -358,10 +345,10 @@ class Utility(object):
         self.overrides = overrides
 
         # Set activeLayer on init
-        self._extendActiveLayer(self.renderSetup.getVisibleRenderLayer(), valid=True)
+        self._extendActiveLayer(renderSetup.instance().getVisibleRenderLayer(), valid=True)
     # Methods
     def removeMissingSelections(self):
-        lyrs = self.renderSetup.getRenderLayers()
+        lyrs = renderSetup.instance().getRenderLayers()
         for l in lyrs:
             cl = l.getCollections()
             for c in cl:
@@ -374,7 +361,7 @@ class Utility(object):
                             if cmds.objExists(item): validList.append(item)
                             selector.staticSelection.set(validList)
     def layer(self, inValue=None):
-        lyrs = self.renderSetup.getRenderLayers()
+        lyrs = renderSetup.instance().getRenderLayers()
         if inValue is None:
             self._extendActiveLayer(valid=False)
             print('layer(): No index or name given.')
@@ -401,4 +388,4 @@ class Utility(object):
                 self.addLayer(inValue)
                 return self.activeLayer
     def layers(self):
-        return self.renderSetup.getRenderLayers()
+        return renderSetup.instance().getRenderLayers()
