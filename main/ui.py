@@ -2135,11 +2135,7 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         ptr = OpenMayaUI.MQtUtil.mainWindow()
 
         self.setWindowFlags(QtCore.Qt.Window)
-<<<<<<< HEAD
-        self.setWindowTitle('Render Setup Utility - {0}'.format('v0.5.1'))
-=======
         self.setWindowTitle(windowTitle)
->>>>>>> 9687275f597d6171b018d40a5dcec87f9ef7e1b9
         self.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
 
         self.setObjectName(windowID)
