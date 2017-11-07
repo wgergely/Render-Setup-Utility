@@ -265,7 +265,7 @@ class ShaderUtility(object):
         if m is None:
             m = re.match('([a-zA-Z0-9_:]+)(\s+)(.*)', string)
             if m is None:
-                print ('Couldn\'t get shader name from custom string.')
+                print ('# Couldn\'t get shader name from custom string.')
                 return None
             else:
                 if properties:
@@ -338,7 +338,6 @@ class ShaderUtility(object):
                 for c in xrange(sourcePlug.numChildren()):
                     value = sourcePlug.child(c).asFloat()
                     destinationPlug.child(c).setFloat(value)
-                    print sourcePlug.partialName(useLongNames=True)
                 return
 
             # TYPED
@@ -356,16 +355,13 @@ class ShaderUtility(object):
                     return
                 elif pType in [ OpenMaya.MFnNumericData.kShort, OpenMaya.MFnNumericData.kInt, OpenMaya.MFnNumericData.kLong, OpenMaya.MFnNumericData.kByte ]:
                     destinationPlug.setInt(sourcePlug.asInt())
-                    print sourcePlug.asInt()
                     return
                 elif pType in [ OpenMaya.MFnNumericData.kFloat, OpenMaya.MFnNumericData.kDouble, OpenMaya.MFnNumericData.kAddr ]:
                     destinationPlug.setDouble(sourcePlug.asDouble())
-                    print sourcePlug.asDouble()
                     return
             # Enum
             elif apiType == OpenMaya.MFn.kEnumAttribute:
                 destinationPlug.setInt(sourcePlug.asInt())
-                print sourcePlug.asInt()
                 return
         def _getValue(inPlug):
             # Float Groups - rotate, translate, scale; Compounds
@@ -561,7 +557,6 @@ class ShaderUtility(object):
 
 
         for shaderName in self.data.keys():
-            print shaderName
             if self.data[shaderName]['light']:
                 group = d.setdefault('<Lights>', [])
                 group.append(shaderName)

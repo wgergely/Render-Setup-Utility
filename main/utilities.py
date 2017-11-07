@@ -3,7 +3,7 @@ import re
 
 def log(inString=None):
     debug = False
-    if debug: print '|> Render Setup Utility: %s' % inString
+    if debug: print '# Render Setup Utility: %s' % inString
 
 def find_nth(haystack, needle, n):
     start = haystack.find(needle)
@@ -11,7 +11,7 @@ def find_nth(haystack, needle, n):
         start = haystack.find(needle, start+len(needle))
         n -= 1
     return start
-    
+
 def addChars(c,n):
     l = []
     for _ in xrange(n):

@@ -49,7 +49,6 @@ windowRenameTitle   = 'Rename Selected'
 windowNewShaderID   = 'RenderSetupUtilityNewShaderWin'
 windowNewShaderTitle= 'Assign Shader'
 
-# Variable to store current list selection
 global currentSelection
 global propertyOverridesMode
 global shaderOverrideMode
@@ -70,9 +69,6 @@ shaderOverrideMode = False
 selectedShaderOverride = None
 overrideShader = None
 cmd = {}
-
-rsUtility = utility.Utility()
-rsRenderOutput = renderOutput.RenderOutput()
 
 # Helper functions
 def maya_useNewAPI():
@@ -717,14 +713,14 @@ cmd['rsRemoveCollection'] = rsRemoveCollection
 
 def rsRenameShader(arg):
     """
-    Rename
+    Rename Shader
     """
+
     sel = getListSelection()
     if sel is None or sel is []:
         return None
-    else:
-        if len(sel) != 1:
-            return None
+    if len(sel) != 1:
+        return None
 
     WIDTH = WINDOW_WIDTH*(float(4)/5)
     OFFSET = WINDOW_WIDTH*(float(1)/5)
@@ -751,7 +747,7 @@ def rsRenameShader(arg):
         sel = getListSelection()
         if len(text) > 0:
             shaderName = rsShaderUtility.customStringToShaderName(sel[0])
-            items = cmds.ls(shaderName + '*', absoluteName=False, long=True)
+            items = cmds.ls(shaderName + '*', long=False)
             for item in items:
                 if cmds.objExists(item):
                     cmds.rename(item, item.replace(shaderName, text))
@@ -2092,6 +2088,12 @@ class CustomRenamer(object):
         else:
             value = None
 
+
+        if grps.keys() == []:
+            return False
+        if grps.keys() is None:
+            return False
+
         if grps.keys() != []:
             for item in util.natsort(grps.keys()):
                 cmds.menuItem(label=item, parent='%s_optionMenu01' % (self.windowID))
@@ -2100,13 +2102,17 @@ class CustomRenamer(object):
 
         # Menu2
         key = value
+        if key is None:
+            return False
+
         if (cmds.optionMenu('%s_optionMenu02' % (self.windowID), query=True, numberOfItems=True) > 0):
             value = cmds.optionMenu('%s_optionMenu02' % (self.windowID), query=True, value=True)
             for item in cmds.optionMenu('%s_optionMenu02' % (self.windowID), query=True, itemListLong=True):
                 cmds.deleteUI(item)
         else:
             value = None
-        if key is not None:
+
+        if key in grps.keys():
             for item in util.natsort(grps[key]):
                 cmds.menuItem(label=item, parent='%s_optionMenu02' % (self.windowID))
                 if value is not None:
@@ -3361,10 +3367,48 @@ class EventFilter(QtCore.QObject):
 
 global _cbs
 _cbs = []
+global isWindowVisible
+isWindowVisible = False
 
+def _cb_kAfterNew(clientData):
+    import maya.utils as mUtils
+    try:
+        if isWindowVisible:
+            createUI()
+    except Exception as e:
+        print "Callback error({0}): {1}".format(e.errno, e.strerror)
+def _cb_kAfterOpen(clientData):
+    import maya.utils as mUtils
+    try:
+        if isWindowVisible:
+            createUI()
+    except Exception as e:
+        print "Callback error({0}): {1}".format(e.errno, e.strerror)
 def _cb_kBeforeNew(clientData):
     import maya.utils as mUtils
+
     global _cbs
+    global isWindowVisible
+    isWindowVisible = cmds.workspaceControl(RenderSetupUtilityWindow.toolName + 'WorkspaceControl', query=True, visible=True)
+
+    global currentSelection
+    currentSelection = None
+    global selectedShaderOverride
+    selectedShaderOverride = None
+    global overrideShader
+    overrideShader = None
+
+    global rsUtility
+    rsUtility = None
+
+    global rsRenderOutput
+    rsRenderOutput = None
+    global rsShaderUtility
+    rsShaderUtility = None
+    global window
+    window = None
+    global windowStyle
+    windowStyle = None
 
     for cb in _cbs:
         OpenMaya.MSceneMessage.removeCallback(cb)
@@ -3372,18 +3416,44 @@ def _cb_kBeforeNew(clientData):
 
     def _del():
         clientData.deleteInstances()
-    mUtils.executeDeferred(_del)
+
+    _del()
 
 def _cb_kBeforeOpen(clientData):
     import maya.utils as mUtils
     global _cbs
 
+    global isWindowVisible
+    isWindowVisible = cmds.workspaceControl(RenderSetupUtilityWindow.toolName + 'WorkspaceControl', query=True, visible=True)
+
+    global currentSelection
+    currentSelection = None
+    global selectedShaderOverride
+    selectedShaderOverride = None
+    global overrideShader
+    overrideShader = None
+
+    global rsUtility
+    rsUtility = None
+
+    global rsRenderOutput
+    rsRenderOutput = None
+    global rsShaderUtility
+    rsShaderUtility = None
+    global window
+    window = None
+    global windowStyle
+    windowStyle = None
+
     for cb in _cbs:
         OpenMaya.MSceneMessage.removeCallback(cb)
     _cbs = []
+
     def _del():
         clientData.deleteInstances()
-    mUtils.executeDeferred(_del)
+
+    # mUtils.executeDeferred(_del)
+    _del()
 
 def createUI(eventsFilters=False):
     # Let's make sure arnold is loaded and that the arnold options are created.
@@ -3392,12 +3462,19 @@ def createUI(eventsFilters=False):
 
     global window
     global windowStyle
+    global rsUtility
+    global rsRenderOutput
     global _cbs
+    global isWindowVisible
 
+    rsUtility = utility.Utility()
+    rsRenderOutput = renderOutput.RenderOutput()
+
+    # Main window creation
     window = RenderSetupUtilityWindow()
-
-    window.show(dockable=True)
+    window.show(dockable=True) # creates the workspace control
     window.createUI()
+    isWindowVisible = True
 
     windowStyle = WindowStyle(parent=window)
 
@@ -3423,5 +3500,19 @@ def createUI(eventsFilters=False):
             clientData=window
         )
         _cbs.append(cb_kBeforeOpen)
+
+        cb_kAfterNew = OpenMaya.MSceneMessage.addCallback(
+            OpenMaya.MSceneMessage.kAfterNew,
+            _cb_kAfterNew,
+            clientData=window
+        )
+        _cbs.append(cb_kAfterNew)
+
+        cb_kAfterOpen = OpenMaya.MSceneMessage.addCallback(
+            OpenMaya.MSceneMessage.kAfterOpen,
+            _cb_kAfterOpen,
+            clientData=window
+        )
+        _cbs.append(cb_kAfterOpen)
 
     window.updateUI(updateRenderSetup=False)
