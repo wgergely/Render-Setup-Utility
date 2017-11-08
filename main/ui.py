@@ -764,7 +764,7 @@ def rsRenameShader(arg):
             if len(arg) == 0:
                 cmds.button('rsuRenameWindow_button01', edit=True, enable=False)
             else:
-                if arg in rsUtility.getShaderList(excludeOverrides=False, excludeUnused=False):
+                if arg in rsShaderUtility.getShaderList(excludeOverrides=False, excludeUnused=False):
                     cmds.button('rsuRenameWindow_button01', edit=True, enable=False, label='Name exists already')
                 else:
                     cmds.button('rsuRenameWindow_button01', edit=True, enable=True, label='Rename')
