@@ -22,15 +22,94 @@ LIGHTS_OFF = 'lights_off'
 TEMP_NAME = '_tempMeshShape'
 
 OVERRIDE_ATTRIBUTES = (
-    {'long':'primaryVisibility', 'short':'vis', 'type':OpenMaya.MFnNumericData.kBoolean, 'default':True, 'custom':('c-','')}, # custom is the short string to be displayed when shader is active
-    {'long':'aiVisibleInDiffuse', 'short':'ai_vid', 'type':OpenMaya.MFnNumericData.kBoolean, 'default':True, 'custom':('d-','')},
-    {'long':'aiVisibleInGlossy', 'short':'ai_vig', 'type':OpenMaya.MFnNumericData.kBoolean, 'default':True, 'custom':('g-','')},
-    {'long':'visibleInReflections', 'short':'vir', 'type':OpenMaya.MFnNumericData.kBoolean, 'default':True, 'custom':('rl-','')},
-    {'long':'visibleInRefractions', 'short':'vif', 'type':OpenMaya.MFnNumericData.kBoolean, 'default':True, 'custom':('rr-','')},
-    {'long':'aiOpaque', 'short':'ai_opaque', 'type':OpenMaya.MFnNumericData.kBoolean, 'default':True, 'custom':('','tr-')},
-    {'long':'castShadows', 'short':'cast_shadows', 'type':OpenMaya.MFnNumericData.kBoolean, 'default':True, 'custom':('s-','')},
-    {'long':'aiSelfShadows', 'short':'ai_self_shadows', 'type':OpenMaya.MFnNumericData.kBoolean, 'default':True, 'custom':('ss-','')},
-    {'long':'aiMatte', 'short':'ai_matte', 'type':OpenMaya.MFnNumericData.kBoolean, 'default':False, 'custom':('M-','')}
+    {
+		'long': 'primaryVisibility',
+		'short': 'vis',
+		'nice': 'Visible in Camera',
+		'type': OpenMaya.MFnNumericData.kBoolean,
+		'default': True,
+		'custom': ('c-','')
+	},
+    {
+		'long': 'aiVisibleInDiffuse',
+		'short': 'ai_vid',
+		'nice': 'Visible in Diffuse',
+		'type': OpenMaya.MFnNumericData.kBoolean,
+		'default': True,
+		'custom': ('d-','')
+	},
+    {
+		'long': 'aiVisibleInGlossy',
+		'short': 'ai_vig',
+		'nice': 'Visible in Glossy',
+		'type': OpenMaya.MFnNumericData.kBoolean,
+		'default': True,
+		'custom': ('g-','')
+	},
+    {
+		'long': 'visibleInReflections',
+		'short': 'vir',
+		'nice': 'Visible in Reflections',
+		'type': OpenMaya.MFnNumericData.kBoolean,
+		'default': True,
+		'custom': ('rl-','')
+	},
+    {
+		'long': 'visibleInRefractions',
+		'short': 'vif',
+		'nice': 'Visible in Refractions',
+		'type': OpenMaya.MFnNumericData.kBoolean,
+		'default': True,
+		'custom': ('rr-','')
+	},
+    {
+		'long': 'aiOpaque',
+		'short': 'ai_opaque',
+		'nice': 'Opaque',
+		'type': OpenMaya.MFnNumericData.kBoolean,
+		'default': True,
+		'custom': ('','tr-')
+	},
+    {
+		'long': 'castsShadows',
+		'short':'csh',
+		'nice': 'Cast Shadows',
+		'type': OpenMaya.MFnNumericData.kBoolean,
+		'default': True,
+		'custom': ('cs-','')
+	},
+    {
+		'long':'receiveShadows',
+		'short':'rcsh',
+		'nice': 'Recieve Shadows',
+		'type':OpenMaya.MFnNumericData.kBoolean,
+		'default':True,
+		'custom':('rs-','')
+	},
+    {
+		'long': 'aiSelfShadows',
+		'short': 'ai_self_shadows',
+		'nice': 'Cast Self Shadows',
+		'type': OpenMaya.MFnNumericData.kBoolean,
+		'default': True,
+		'custom': ('ss-','')
+	},
+    {
+		'long':'doubleSided',
+		'short':'ds',
+		'nice': 'Double Sided',
+		'type':OpenMaya.MFnNumericData.kBoolean,
+		'default':True,
+		'custom':('ds-','')
+	},
+    {
+		'long':'aiMatte',
+		'short':'ai_matte',
+		'nice': 'Matte',
+		'type':OpenMaya.MFnNumericData.kBoolean,
+		'default':False,
+		'custom':('M-','')
+	}
 )
 
 class Utility(object):
@@ -54,7 +133,7 @@ class Utility(object):
             if isinstance(inName, basestring):
                 for lyr in lyrs:
                     if lyr.name() == inName:
-                        print(inName + ' exists already. Skipping.')
+                        print('# {0} exists already. Skipping.'.format(inName))
                         self._extendActiveLayer(lyr, valid=True)
                         return self.activeLayer
                 l = renderSetup.instance().createRenderLayer(inName)
@@ -142,7 +221,7 @@ class Utility(object):
                 # Check for existing collection with
                 for coll in colls:
                     if coll.name() == inValue:
-                        print('Collection \'' + coll.name() + '\' already exists in \'' + self.activeLayer.name() + '\'')
+                        print('# Collection \'' + coll.name() + '\' already exists in \'' + self.activeLayer.name() + '\'')
                         return None
                 c = l.createCollection(inValue)
                 self._extendActiveCollection(c,valid=True)
@@ -157,7 +236,7 @@ class Utility(object):
                         exists = False
                         if item.name() == string:
                             exists = True
-                            print('Collection \'' + item.name() + '\' already exists in \'' + self.activeLayer.name() + '\'')
+                            print('# Collection \'' + item.name() + '\' already exists in \'' + self.activeLayer.name() + '\'')
                             break
                     if exists is False:
                         c = l.createCollection(string)
@@ -180,7 +259,7 @@ class Utility(object):
                 return True
 
             if found == []:
-                print('Couldn\'t find collection to delete.')
+                print('# Couldn\'t find collection to delete.')
                 return False
 
         def setSelection(inValue, inFilterType):
@@ -206,7 +285,7 @@ class Utility(object):
                 try:
                     return ov[inValue]
                 except:
-                    print('Couldn\'t get override of that index.')
+                    print('# Couldn\'t get override of that index.')
                     return None
             # Return by name
             if isinstance(inValue, basestring):
@@ -217,7 +296,7 @@ class Utility(object):
                             found = True
                             return o
                     except:
-                        print('Couldn\'t get override based on that name.')
+                        print('# Couldn\'t get override based on that name.')
                 if found is False:
                     return None
         def setOverrideValue(inName, inValue=None):
@@ -228,7 +307,7 @@ class Utility(object):
                     if o.attributeName() == inName:
                         o.setAttrValue(inValue)
                 except:
-                    print('Couldn\'t set override attribute value.')
+                    print('# Couldn\'t set override attribute value.')
                     return None
         def getOverrideValue(inName):
             ov = self.activeCollection.overrides()
@@ -237,7 +316,7 @@ class Utility(object):
                     if o.attributeName() == inName:
                          return o.getAttrValue()
                 except:
-                    print('Couldn\'t get override attribute value.')
+                    print('# Couldn\'t get override attribute value.')
                     return None
 
         def _extendActiveLayer(inLayer = None, valid=True):
@@ -316,7 +395,7 @@ class Utility(object):
 	                self.activeCollection.overrides = overrides
             except:
                 self.activeCollection.overrides = overrides
-                raise RuntimeError('An error occured adding default overrides.')
+                print('# An error occured adding default overrides.')
 
             if cmds.objExists(TEMP_NAME):
                 p = cmds.listRelatives(TEMP_NAME, allParents=True)[0]
@@ -360,11 +439,12 @@ class Utility(object):
                         for item in items:
                             if cmds.objExists(item): validList.append(item)
                             selector.staticSelection.set(validList)
+
     def layer(self, inValue=None):
         lyrs = renderSetup.instance().getRenderLayers()
         if inValue is None:
             self._extendActiveLayer(valid=False)
-            print('layer(): No index or name given.')
+            print('# layer(): No index or name given.')
             return self.activeLayer
         # Return by index
         if type(inValue) is int:
@@ -373,7 +453,7 @@ class Utility(object):
                 return self.activeLayer
             except:
                 self._extendActiveLayer(inLayer = None, valid=False)
-                print('Couldn\'t get render layer of that index.')
+                print('# Couldn\'t get render layer of that index.')
                 return self.activeLayer
         # Return by name
         if isinstance(inValue, basestring):

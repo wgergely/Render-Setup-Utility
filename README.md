@@ -63,4 +63,4 @@ RenderSetupUtility.show()
 
 ## Notes
 
-This is a work-in-progress module and is there are plenty of bugs. I haven't tested it outside my own little work environment so who knows, it might be broken.
+...

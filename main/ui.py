@@ -198,7 +198,7 @@ def setPropertyOverridesMode():
     propertyOverridesMode = False
     appliedAttributes = []
 
-    q.getQItem('%s_text01' % (windowID), QtWidgets.QLabel)
+    q.getQItem('%s_textArnoldPropertyOverridesLabel' % (windowID), QtWidgets.QLabel)
 
     def setFalse():
         propertyOverridesMode = False
@@ -207,8 +207,8 @@ def setPropertyOverridesMode():
         q.widget.setText('Apply Arnold Property Overrides')
 
         for index, item in enumerate(rsUtility.overrideAttributes):
-            cmds.checkBox('%s_checkbox' % (windowID) + str(int(index+2)).zfill(2), edit=True, enable=True)
-            cmds.text('%s_text' % (windowID) + str(int(index+2)).zfill(2), edit=True, enable=True)
+            cmds.checkBox('%s_checkbox' % (windowID) + str(int(index)).zfill(2), edit=True, enable=True)
+            cmds.text('%s_text' % (windowID) + str(int(index)).zfill(2), edit=True, enable=True)
 
     if sel == []:
         setFalse()
@@ -242,11 +242,11 @@ def setPropertyOverridesMode():
             # Setting checkbox values and ui
             for index, attr in enumerate(mode):
                 if attr:
-                    cmds.checkBox('%s_checkbox' % (windowID) + str(int(index+2)).zfill(2), edit=True, value=c.getOverrideValue(attr), enable=True)
-                    cmds.text('%s_text' % (windowID) + str(int(index+2)).zfill(2), edit=True, enable=True)
+                    cmds.checkBox('%s_checkbox' % (windowID) + str(int(index)).zfill(2), edit=True, value=c.getOverrideValue(attr), enable=True)
+                    cmds.text('%s_text' % (windowID) + str(int(index)).zfill(2), edit=True, enable=True)
                 else: # Disabling checkbox if attribute is missing
-                    cmds.checkBox('%s_checkbox' % (windowID) + str(int(index+2)).zfill(2), edit=True, enable=False)
-                    cmds.text('%s_text' % (windowID) + str(int(index+2)).zfill(2), edit=True, enable=False)
+                    cmds.checkBox('%s_checkbox' % (windowID) + str(int(index)).zfill(2), edit=True, enable=False)
+                    cmds.text('%s_text' % (windowID) + str(int(index)).zfill(2), edit=True, enable=False)
 
             if len(sel) == 1:
                 q.widget.setText('Edit override values:')
@@ -263,11 +263,11 @@ def setPropertyOverridesMode():
 
             # Setting checkbox values and ui
             for index, attr in enumerate(rsUtility.overrideAttributes):
-                cmds.checkBox('%s_checkbox' % (windowID) + str(int(index+2)).zfill(2), edit=True, enable=False)
-                cmds.text('%s_text' % (windowID) + str(int(index+2)).zfill(2), edit=True, enable=False)
+                cmds.checkBox('%s_checkbox' % (windowID) + str(int(index)).zfill(2), edit=True, enable=False)
+                cmds.text('%s_text' % (windowID) + str(int(index)).zfill(2), edit=True, enable=False)
 
             # Set string
-            cmds.text('%s_text01' % (windowID), edit=True, label='No property overrides in the collection.', enableBackground=False)
+            cmds.text('%s_textArnoldPropertyOverridesLabel' % (windowID), edit=True, label='No property overrides in the collection.', enableBackground=False)
             q.widget.setStyleSheet('QLabel {color: rgb(50,50,50)}')
 
             return False
@@ -409,8 +409,7 @@ def getListSelection():
         return sel
 
 def rsSelectActiveLayer(arg):
-    print arg
-    print rsUtility.switchLayer(arg, switchLayer=False)
+    rsUtility.switchLayer(arg, switchLayer=False)
     window.updateUI(updateRenderSetup=False)
 cmd['%s_selectActiveLayer' % (windowID)] = rsSelectActiveLayer
 
@@ -644,7 +643,7 @@ def rsAddCollection(arg):
 
     # Change Override values from UI
     for index, item in enumerate(rsUtility.overrideAttributes):
-        rsUtility.overrideAttributes[index]['default'] = cmds.checkBox('%s_checkbox' % (windowID) + str(2+index).zfill(2), query=True, value=True)
+        rsUtility.overrideAttributes[index]['default'] = cmds.checkBox('%s_checkbox' % (windowID) + str(index).zfill(2), query=True, value=True)
 
     sel = getListSelection()
     _currentSelection = []
@@ -675,7 +674,7 @@ def rsAddCollection(arg):
         if _hasOverride(shaderName) is False:
 
             # Shader override
-            shaderOverrideCB = cmds.checkBox('%s_checkbox11' % (windowID), query=True, value=True)
+            shaderOverrideCB = cmds.checkBox('%s_shaderOverrideCheckbox' % (windowID), query=True, value=True)
 
             if shaderOverrideCB:
                 choice = cmds.optionMenu('%s_optionMenu02' % (windowID), query=True, value=True)
@@ -765,7 +764,7 @@ def rsRenameShader(arg):
             if len(arg) == 0:
                 cmds.button('rsuRenameWindow_button01', edit=True, enable=False)
             else:
-                if arg in _matList():
+                if arg in rsUtility.getShaderList(excludeOverrides=False, excludeUnused=False):
                     cmds.button('rsuRenameWindow_button01', edit=True, enable=False, label='Name exists already')
                 else:
                     cmds.button('rsuRenameWindow_button01', edit=True, enable=True, label='Rename')
@@ -1341,52 +1340,46 @@ def _setOverrideValue(arg, index):
             window.updateUI(updateRenderSetup=False)
     cmds.evalDeferred(update)
 
-def _matList():
-    matList = []
-    for item in rsShaderUtility.data:
-        matList.append(str(item))
-    return util.natsort(matList)
-
-def rsuWindow_checkbox02(arg):
+# Arnold property checkboxes
+def rsuWindow_checkbox00(arg):
     _setOverrideValue(arg, 0)
-cmd['%s_checkbox02' % (windowID)] = rsuWindow_checkbox02
-
-def rsuWindow_checkbox03(arg):
+def rsuWindow_checkbox01(arg):
     _setOverrideValue(arg, 1)
-cmd['%s_checkbox03' % (windowID)] = rsuWindow_checkbox03
-
-def rsuWindow_checkbox04(arg):
+def rsuWindow_checkbox02(arg):
     _setOverrideValue(arg, 2)
-cmd['%s_checkbox04' % (windowID)] = rsuWindow_checkbox04
-
-def rsuWindow_checkbox05(arg):
+def rsuWindow_checkbox03(arg):
     _setOverrideValue(arg, 3)
-cmd['%s_checkbox05' % (windowID)] = rsuWindow_checkbox05
-
-def rsuWindow_checkbox06(arg):
+def rsuWindow_checkbox04(arg):
     _setOverrideValue(arg, 4)
-cmd['%s_checkbox06' % (windowID)] = rsuWindow_checkbox06
-
-def rsuWindow_checkbox07(arg):
+def rsuWindow_checkbox05(arg):
     _setOverrideValue(arg, 5)
-cmd['%s_checkbox07' % (windowID)] = rsuWindow_checkbox07
-
-def rsuWindow_checkbox08(arg):
+def rsuWindow_checkbox06(arg):
     _setOverrideValue(arg, 6)
-cmd['%s_checkbox08' % (windowID)] = rsuWindow_checkbox08
-
-def rsuWindow_checkbox09(arg):
+def rsuWindow_checkbox07(arg):
     _setOverrideValue(arg, 7)
-cmd['%s_checkbox09' % (windowID)] = rsuWindow_checkbox09
-
-def rsuWindow_checkbox10(arg):
+def rsuWindow_checkbox08(arg):
     _setOverrideValue(arg, 8)
+def rsuWindow_checkbox09(arg):
+    _setOverrideValue(arg, 9)
+def rsuWindow_checkbox10(arg):
+    _setOverrideValue(arg, 10)
+
+cmd['%s_checkbox00' % (windowID)] = rsuWindow_checkbox00
+cmd['%s_checkbox01' % (windowID)] = rsuWindow_checkbox01
+cmd['%s_checkbox02' % (windowID)] = rsuWindow_checkbox02
+cmd['%s_checkbox03' % (windowID)] = rsuWindow_checkbox03
+cmd['%s_checkbox04' % (windowID)] = rsuWindow_checkbox04
+cmd['%s_checkbox05' % (windowID)] = rsuWindow_checkbox05
+cmd['%s_checkbox06' % (windowID)] = rsuWindow_checkbox06
+cmd['%s_checkbox07' % (windowID)] = rsuWindow_checkbox07
+cmd['%s_checkbox08' % (windowID)] = rsuWindow_checkbox08
+cmd['%s_checkbox09' % (windowID)] = rsuWindow_checkbox09
 cmd['%s_checkbox10' % (windowID)] = rsuWindow_checkbox10
 
-def rsuWindow_checkbox11(arg):
+def rsuWindow_shaderOverrideCheckbox(arg):
     """Shader override toggle"""
     cmds.columnLayout('%s_columnLayout03' % (windowID), edit=True, visible=arg)
-cmd['%s_checkbox11' % (windowID)] = rsuWindow_checkbox11
+cmd['%s_shaderOverrideCheckbox' % (windowID)] = rsuWindow_shaderOverrideCheckbox
 
 # UI functions
 def addScrollLayout(inTitle, parent, enable=True, visible=True):
@@ -1534,21 +1527,28 @@ def addCheckBox(inTitle, label, offCommand, onCommand, value = False, enable=Tru
         enable = enable,
         visible = visible
     )
-def addCheckboxes(integer1, integer2, parent, listItem):
-    for index, item in enumerate(listItem):
-        def inc(i): return str(index+i).zfill(2)
+
+def addCheckboxes(parent):
+
+    for index, item in enumerate(rsUtility.overrideAttributes):
+
         cmds.setParent(parent)
-        addRowLayout('%s_rowLayout' % (windowID) + inc(integer1), 2,
+        addRowLayout('%s_rowLayout' % (windowID) + str(index).zfill(2), 2,
                         columnOffset2 = (20,0),
                         columnAlign2 = ('left','left'),
                         columnAttach2 = ('left','right'),
                         columnWidth2 = ((WINDOW_WIDTH-(FRAME_MARGIN[0]*2))*0.85, (WINDOW_WIDTH-(FRAME_MARGIN[0]*2))*0.15-1.0))
-        addText('%s_text' % (windowID) + inc(integer2), item[0] + util.addChars(' ', 100))
-        if item[0] is 'Matte':
-            value = False
-        else:
-            value = True
-        addCheckBox('%s_checkbox' % (windowID) + inc(integer2), '', item[1], item[2], value=value)
+
+        addText(
+            '%s_text' % (windowID) + str(index).zfill(2),
+            item['nice'] + util.addChars(' ', 100)
+        )
+        cmds.checkBox(
+            '%s_checkbox' % (windowID) + str(index).zfill(2),
+            label='',
+            changeCommand=cmd['{0}_checkbox{1}'.format(windowID, str(index).zfill(2))],
+            value=item['default']
+        )
 
 class QGet(QtCore.QObject):
     def __init__(self, parent=None):
@@ -1854,7 +1854,7 @@ class CustomRenamer(object):
 
         # row2
         cmds.rowLayout(
-            '%s_rowLayout01' % (self.windowID),
+            '%s_rowLayoutActiveRenderLayer' % (self.windowID),
             parent = '%s_columnLayout01' % (self.windowID),
             numberOfColumns = 3,
             columnAlign3 = ('left','left','right'),
@@ -2195,14 +2195,14 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             style='none'
         )
         addFrameLayout(
-            '%s_frameLayout01' % (windowID),
+            '%s_frameLayoutLayers' % (windowID),
             'Visible Render Layer',
             collapsable=False,
             labelVisible=False,
             marginHeight=0
         )
         addRowLayout(
-            '%s_rowLayout01' % (windowID), 3,
+            '%s_rowLayoutActiveRenderLayer' % (windowID), 3,
             columnAlign3 = ('left','left','right'),
             columnAttach3 = ('left','both','right'),
             columnWidth3 = (
@@ -2218,14 +2218,14 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         # Work Render Layers
         cmds.setParent(q.fullPath)
         addFrameLayout(
-            '%s_frameLayout01B' % (windowID),
+            '%s_frameLayoutLayersB' % (windowID),
             'Work Render Layer',
             collapsable=False,
             labelVisible=False,
             marginHeight=0
         )
         addRowLayout(
-            '%s_rowLayout01B' % (windowID), 3,
+            '%s_rowLayoutVisibleRenderLayer' % (windowID), 3,
             columnAlign3 = ('left','left','right'),
             columnAttach3 = ('left','both','right'),
             columnWidth3 = (
@@ -2336,7 +2336,7 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                         columnAlign2 = ('left','both'),
                         columnAttach2 = ('left','right'),
                         columnWidth2 = ((WINDOW_WIDTH-(FRAME_MARGIN[0]*2))*0.75, (WINDOW_WIDTH-(FRAME_MARGIN[0]*2))*0.25))
-        addText('%s_text01' % (windowID), 'Apply Arnold Property Overrides', 'plainLabelFont')
+        addText('%s_textArnoldPropertyOverridesLabel' % (windowID), 'Apply Arnold Property Overrides', 'plainLabelFont')
         addCheckBox('rsArnoldPropertyOverridesCheckBox', '', cmd['rsArnoldPropertyOverridesCheckBox'], cmd['rsArnoldPropertyOverridesCheckBox'])
         cmds.separator(
             parent='%s_columnLayout20' % (windowID),
@@ -2355,18 +2355,7 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             rowSpacing=0
         )
 
-        listItem = (
-            ('Visible in Camera',       cmd['%s_checkbox02' % (windowID)], cmd['%s_checkbox02' % (windowID)]),
-            ('Visible in Diffuse',      cmd['%s_checkbox03' % (windowID)], cmd['%s_checkbox03' % (windowID)]),
-            ('Visible in Glossy',       cmd['%s_checkbox04' % (windowID)], cmd['%s_checkbox04' % (windowID)]),
-            ('Visible in Reflections',  cmd['%s_checkbox05' % (windowID)], cmd['%s_checkbox05' % (windowID)]),
-            ('Visible in Refractions',  cmd['%s_checkbox06' % (windowID)], cmd['%s_checkbox06' % (windowID)]),
-            ('Opaque',                  cmd['%s_checkbox07' % (windowID)], cmd['%s_checkbox07' % (windowID)]),
-            ('Cast Shadows',            cmd['%s_checkbox08' % (windowID)], cmd['%s_checkbox08' % (windowID)]),
-            ('Cast Self Shadows',       cmd['%s_checkbox09' % (windowID)], cmd['%s_checkbox09' % (windowID)]),
-            ('Matte',                   cmd['%s_checkbox10' % (windowID)], cmd['%s_checkbox10' % (windowID)])
-        )
-        addCheckboxes(7, 2, '%s_columnLayout02' % (windowID), listItem)
+        addCheckboxes('%s_columnLayout02' % (windowID))
         cmds.columnLayout('%s_columnLayout02' % (windowID), edit=True, visible=False)
 
         ##################################################
@@ -2390,7 +2379,7 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                         columnAttach2 = ('left','right'),
                         columnWidth2 = ((WINDOW_WIDTH-(FRAME_MARGIN[0]*2))*0.75, (WINDOW_WIDTH-(FRAME_MARGIN[0]*2))*0.25))
         addText('%s_text11' % (windowID), 'Shader Override', 'plainLabelFont')
-        addCheckBox('%s_checkbox11' % (windowID), '', cmd['%s_checkbox11' % (windowID)], cmd['%s_checkbox11' % (windowID)])
+        addCheckBox('%s_shaderOverrideCheckbox' % (windowID), '', cmd['%s_shaderOverrideCheckbox' % (windowID)], cmd['%s_shaderOverrideCheckbox' % (windowID)])
         cmds.separator(
             parent = '%s_columnLayout21' % (windowID),
             height = 4,
@@ -2681,7 +2670,7 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 SHADER_OVERRIDE = ''
                 if _hasOverride(shaderName):
                     SHADER_OVERRIDE = '#'
-                rsShaderUtility.data[shaderName]['customString'] = '%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s' % (
+                rsShaderUtility.data[shaderName]['customString'] = '%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s' % (
                     ACTIVEITEM_PREFIX,
                     shaderName,
                     _spacer(ACTIVEITEM_PREFIX + shaderName),
@@ -2694,6 +2683,8 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                     _get(rsUtility.overrideAttributes[6]),
                     _get(rsUtility.overrideAttributes[7]),
                     _get(rsUtility.overrideAttributes[8]),
+                    _get(rsUtility.overrideAttributes[9]),
+                    _get(rsUtility.overrideAttributes[10]),
                     str(len(rsShaderUtility.data[shaderName]['usedBy'])),
                     WARNING,
                     SHADER_OVERRIDE
@@ -3131,45 +3122,25 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
         window.layout().setSpacing(0)
         window.layout().addStretch(1)
 
-        q.getQItem('%s_frameLayout01' % (windowID), QtWidgets.QWidget)
-        q.widget.setStyleSheet(
-            'QWidget {\
-                padding:0;\
-                margin:0;\
-            }'
-        )
 
-        q.getQItem('%s_frameLayout02' % (windowID), QtWidgets.QWidget)
-        q.widget.setStyleSheet(
-            'QWidget {\
-                padding:0;\
-                margin:0;\
-            }'
-        )
-
-        q.getQItem('%s_rowLayout04' % (windowID), QtWidgets.QWidget)
-        q.widget.setStyleSheet(
-            'QWidget {\
-                padding:0;\
-                margin:0;\
-            }'
-        )
-
-        q.getQItem('%s_rowLayout03' % (windowID), QtWidgets.QWidget)
-        q.widget.setStyleSheet(
-            'QWidget {\
-                padding:0;\
-                margin:0;\
-            }'
-        )
+        for item in ['%s_frameLayoutLayers', '%s_frameLayout02', '%s_rowLayout04', '%s_rowLayout03']:
+            q.getQItem(item % (windowID), QtWidgets.QWidget)
+            q.widget.setStyleSheet(
+                'QWidget {\
+                    padding:0;\
+                    margin:0;\
+                }'
+            )
 
 
         q.getQItem('%s_ShaderScrollList' % (windowID), QtWidgets.QListWidget)
 
         QSize = QtCore.QSize(delegate.ROW_WIDTH, delegate.ROW_HEIGHT)
+
         for i in range(q.widget.count()):
             q.widget.setItemDelegateForRow(i, delegate)
             q.widget.item(i).setSizeHint(QSize)
+
         q.widget.setStyleSheet(
             'QListWidget {\
                 padding:0;\
@@ -3184,17 +3155,16 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
         # Filter list
         q.getQItem('%s_rowLayout03' % (windowID), QtWidgets.QWidget)
         q.widget.setStyleSheet(
-            '.QWidget {\
+            'QWidget {\
                 background-color: rgb(60,60,60);\
                 color: rgb(200,200,200);\
                 padding:1 0;\
                 margin:0;\
-                border-radius:2px\
         }')
 
         # Arnold Propery / Shader Overrides
-        for item in ['%s_columnLayout20' % (windowID), '%s_columnLayout21' % (windowID)]:
-            q.getQItem(item, QtWidgets.QWidget)
+        for item in ['%s_columnLayout20', '%s_columnLayout21']:
+            q.getQItem(item % (windowID), QtWidgets.QWidget)
             q.widget.setStyleSheet(
                 '.QWidget {\
                     background-color: rgb(60,60,60);\
@@ -3256,6 +3226,7 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
                 color: rgb(%s);\
                 background-color: rgb(%s)\
             }' % (eColor, eBackgroundColor, ehColor, ehBackgroundColor, dColor, dBackgroundColor))
+
         def setAdobeButtonStylesheet(inName, eColor, eBackgroundColor, ehBackgroundColor):
             q.getQItem(inName, QtWidgets.QPushButton)
             q.widget.setStyleSheet('QPushButton {\
@@ -3297,8 +3268,12 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
                 margin:0;\
             }')
 
-        def setTextStylesheet(inName, margin, borderColor):
-            q.getQItem(inName, QtWidgets.QLabel)
+        # Arnold Property override checkbox labels
+        for index, item in enumerate(rsUtility.overrideAttributes):
+            q.getQItem(
+                '%s_text%s' % (windowID, str(index).zfill(2)),
+                QtWidgets.QLabel
+            )
             q.widget.setStyleSheet('QLabel {\
                 border-style: dashed;\
                 border-width: 0 0 1px 0;\
@@ -3308,11 +3283,6 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
                 margin-left: 0;\
                 margin-bottom: 2\
             }')
-        margin = '2'
-        borderColor = '55,55,55'
-        for item in ['%s_text02' % (windowID),'%s_text03' % (windowID),'%s_text04' % (windowID),'%s_text05' % (windowID),'%s_text06' % (windowID),
-            '%s_text07' % (windowID),'%s_text08' % (windowID),'%s_text09' % (windowID), '%s_text10' % (windowID)]:
-            setTextStylesheet(item, borderColor, margin)
 
         q.getQItem('%s_button14' % (windowID), QtWidgets.QPushButton)
         q.widget.setStyleSheet('QPushButton {\
