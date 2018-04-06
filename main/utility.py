@@ -7,7 +7,6 @@ import maya.app.renderSetup.model.collection as collection
 import maya.app.renderSetup.model.renderSetup as renderSetup
 import maya.app.renderSetup.model.selector as selector
 import maya.cmds as cmds
-import RenderSetupUtility.main.shaderUtility as shaderUtility
 
 
 def maya_useNewAPI():

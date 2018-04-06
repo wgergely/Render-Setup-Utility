@@ -245,7 +245,7 @@ class RenderOutput(object):
     def pathStr(self, renderLayer, long=False):
         ROOT = cmds.workspace(query=True, rootDirectory=True)
         IMAGES = 'images'
-        version = cmds.optionMenu('%s_optionMenu04' %
+        version = cmds.optionMenu('%s_outputVersionMenu' %
                                   (windowID), query=True, value=True)
         if ROOT:
             self.currentTemplate = cmds.getAttr(

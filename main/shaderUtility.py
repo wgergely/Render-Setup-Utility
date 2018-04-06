@@ -1,10 +1,16 @@
-import re
-
-import maya.api.OpenMaya as OpenMaya # pylint: disable=E0401
-import maya.cmds as cmds # pylint: disable=E0401
-import RenderSetupUtility.main.utilities as util
+"""
+Module defines the shader utility:
+it collects information about the shaders and thei assignment
+used in the current maya scene.
+"""
 
 # pylint: disable=C0103
+
+import re
+
+import maya.api.OpenMaya as OpenMaya  # pylint: disable=E0401
+import maya.cmds as cmds  # pylint: disable=E0401
+import RenderSetupUtility.main.utilities as util
 
 SHADER_TYPES = (
     'aiStandardSurface',
@@ -37,19 +43,19 @@ MODE = (
 
 SHADER_OVERRIDE_OPTIONS = (
     {
-        'ui': 'aiStandard - Keep All Connected Nodes',
+        'ui': 'aiStandardSurface - Keep All Connected Nodes',
         'type': SHADER_TYPES[0],
         'mode': MODE[0][0],
         'suffix': MODE[0][1]
     },
     {
-        'ui': 'aiStandard - No Connections',
+        'ui': 'aiStandardSurface - No Connections',
         'type': SHADER_TYPES[0],
         'mode': MODE[1][0],
         'suffix': MODE[1][1]
     },
     {
-        'ui': 'aiStandard - Keep Opacity',
+        'ui': 'aiStandardSurface - Keep Opacity',
         'type': SHADER_TYPES[0],
         'mode': MODE[3][0],
         'suffix': MODE[3][1]
@@ -144,6 +150,7 @@ SOURCE_NODES = (
     'shadingEngine',
     'aiOption'
 )
+
 SHADER_NODES = (
     'shadingDependNode',
     'THdependNode'
@@ -153,6 +160,7 @@ SURFACE_NODES = (
     'mesh',
     'nurbsSurface'
 )
+
 ENVIRONMENT_NODES = (
     'aiRaySwitch',
     'aiPhysicalSky',
@@ -175,87 +183,103 @@ LIGHT_NODES = (
     'areaLight'
 )
 
+
 class Singleton(type):
     """
     Define an Instance operation that lets clients access its unique
     instance.
     """
-
-    def __init__(cls, name, bases, attrs, **kwargs):
-        super().__init__(name, bases, attrs)
-        cls._instance = None
+    _instances = {}
 
     def __call__(cls, *args, **kwargs):
-        if cls._instance is None:
-            cls._instance = super().__call__(*args, **kwargs)
-        return cls._instance
+        if cls not in cls._instances:
+            cls._instances[cls] = super(
+                Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
 
 class ShaderUtility(object):
     '''
-        Returns a shader list excluding override and meshes assigned to the shaders.
-        Sets all data in to 'data' (dict).
+        Singleton class containing a shader list and assignments
+        excluding override shadersself.
 
+        Sets all data in to 'data' (dict).
         Provides utility methods for duplicating shaders.
 
         update() - Resets the 'data' dict.
     '''
 
+    __metaclass__ = Singleton
+
     def __init__(self):
         self.data = {}
-
         self.shaderList = self.getShaderList(excludeOverrides=True)
         self.overrides = None
         self.autoConnectShaders = None
+        self.update()
 
-        # Surface Shaders
+    def _setShadersToData(self):
+        """ Collects scene shaders
+        """
+
+        shapes = cmds.ls(dagObjects=True, shapes=True, long=True)
+
+        # iterate over shading engines
         for shEngine in cmds.ls(type='shadingEngine'):
             if cmds.sets(shEngine, q=True) is None:
                 continue
+
             shaderName = None
             for connection in [x for x in cmds.listConnections(shEngine)]:
-                myType = cmds.nodeType(connection, i=True)
-                if ('shadingDependNode' in myType or 'THdependNode' in myType):
-                    if cmds.objectType(connection) in SHADER_TYPES:
+                if [f for f in SHADER_NODES if f in cmds.nodeType(connection, i=True)]:
+                    if cmds.objectType(connection) not in SHADER_TYPES:
+                        continue
 
-                        # Check for namespace:
-                        split = self.stripSuffix(connection).split(':')
-                        if len(split) == 1:  # no namespace
-                            shaderName = split[0]
-                            nameSpace = ''
-                        if len(split) > 1:
-                            shaderName = self.stripSuffix(
-                                connection).split(':')[-1]
-                            nameSpace = self.stripSuffix(
-                                connection).split(':')[0]
+                    # Check for namespace:
+                    split = self.stripSuffix(connection).split(':')
+                    if len(split) == 1:  # no namespace
+                        shaderName = split[0]
+                        nameSpace = ''
+                    if len(split) > 1:
+                        shaderName = self.stripSuffix(
+                            connection).split(':')[-1]
+                        nameSpace = self.stripSuffix(
+                            connection).split(':')[0]
+                    if len(nameSpace) >= 1:
+                        shaderName = '%s:%s' % (nameSpace, shaderName)
 
-                        if len(nameSpace) >= 1:
-                            shaderName = '%s:%s' % (nameSpace, shaderName)
-                        self.data[shaderName] = {
-                            'name': shaderName,
-                            'nameSpace': nameSpace,
-                            'type': cmds.objectType(connection),
-                            'usedBy': [],
-                            'count': 0,
-                            'shadingGroup': shEngine,
-                            'customString': '',
-                            'shader': True,
-                            'environment': False,
-                            'standIn': False,
-                            'light': False,
-                            'autoConnect': False
-                        }
-            if shaderName is not None:
-                for connection in cmds.sets(shEngine, q=True):
-                    if cmds.ls(connection, long=True) != []:
+                    self.data[shaderName] = {
+                        'name': shaderName,
+                        'nameSpace': nameSpace,
+                        'type': cmds.objectType(connection),
+                        'usedBy': [],
+                        'count': 0,
+                        'shadingGroup': shEngine,
+                        'customString': '',
+                        'shader': True,
+                        'environment': False,
+                        'standIn': False,
+                        'light': False,
+                        'autoConnect': False
+                    }
+
+                    for sh_connection in cmds.sets(shEngine, q=True):
+                        if not cmds.ls(sh_connection, long=True):
+                            continue
                         self.data[shaderName]['usedBy'].append(
-                            cmds.ls(connection, long=True)[0])
-                    self.data[shaderName]['count'] = len(
-                        self.data[shaderName]['usedBy'])
+                            cmds.ls(sh_connection, long=True)[0]
+                        )
+                        self.data[shaderName]['count'] = len(
+                            self.data[shaderName]['usedBy']
+                        )
 
-        # Environment nodes
-        for item in [f for f in cmds.ls(dagObjects=True, shapes=True, long=True) if cmds.nodeType(f) in self.ENVIRONMENT_NODES]:
+    def _setEnvironmentsToData(self):
+        """ Collects scene environments
+        """
 
-                    # Checking for namespace:
+        shapes = cmds.ls(dagObjects=True, shapes=True, long=True)
+        for item in [f for f in shapes if cmds.nodeType(f) in ENVIRONMENT_NODES]:
+            # Checking for namespace:
             split = str(item).split('|')[-1].split(':')
             if len(split) == 1:  # no namespace
                 shaderName = split[0]
@@ -282,6 +306,9 @@ class ShaderUtility(object):
                 'autoConnect': False
             }
 
+    def _setStandinsToData(self):
+        """ Collects scene environments
+        """
         # StandIns
         for item in cmds.ls(type='aiStandIn'):
 
@@ -312,8 +339,13 @@ class ShaderUtility(object):
                 'autoConnect': False
             }
 
+    def _setLightsToData(self):
+        """ Collects scene environments
+        """
+
+        shapes = cmds.ls(dagObjects=True, shapes=True, long=True)
         # Lights
-        for item in [f for f in cmds.ls(dagObjects=True, shapes=True, long=True) if cmds.nodeType(f) in self.LIGHT_NODES]:
+        for item in [f for f in shapes if cmds.nodeType(f) in LIGHT_NODES]:
 
             # Checking for namespace:
             split = str(item).split('|')[-1].split(':')
@@ -343,41 +375,53 @@ class ShaderUtility(object):
             }
 
     def update(self):
-        self.__init__()
+        """ Populate self.data
+        """
+        self.data = {}
+        self._setShadersToData()
+        self._setEnvironmentsToData()
+        self._setStandinsToData()
+        self._setLightsToData()
 
-    def customStringToShaderName(self, string, properties=False):
-        m = re.match('(.*\s+)([a-zA-Z0-9_:]+)(\s+)(.*)', string)
+    @staticmethod
+    def customStringToShaderName(string, properties=False):
+        """ Get the shader's name from a custom string
+        """
+        m = re.match(r'(.*\s+)([a-zA-Z0-9_:]+)(\s+)(.*)', string)
         if m is None:
-            m = re.match('([a-zA-Z0-9_:]+)(\s+)(.*)', string)
+            m = re.match(r'([a-zA-Z0-9_:]+)(\s+)(.*)', string)
             if m is None:
-                print ('# Couldn\'t get shader name from custom string.')
+                print '# Couldn\'t get shader name from custom string.'
                 return None
-            else:
-                if properties:
-                    return m.group(3)
-                else:
-                    return m.group(1)
+            if properties:
+                return m.group(3)
+            return m.group(1)
         else:
             if properties:
                 return m.group(4)
-            else:
-                return m.group(2)
+            return m.group(2)
 
-    def isActive(self, string):
-        m = re.match('(.*\s+)([a-zA-Z0-9_:]+)(\s+)(.*)', string)
+    @staticmethod
+    def isActive(string):
+        """ Check if the shader is active
+        """
+        m = re.match(r'(.*\s+)([a-zA-Z0-9_:]+)(\s+)(.*)', string)
         if m is None:
-            m = re.match('([a-zA-Z0-9_:]+)(\s+)(.*)', string)
+            m = re.match(r'([a-zA-Z0-9_:]+)(\s+)(.*)', string)
             if m is None:
                 return None
-            else:
-                return False
+            return False
         else:
             return True
 
-    def _getConnectedInputConnections(self, shaderName):
-        # Check for namespaces:
+    @staticmethod
+    def _getConnectedInputConnections(shaderName):
+        """ List all the input connection of a given shader,
+        that has active connections.
+        """
+
         if cmds.objExists(':%s' % shaderName) is False:
-            if cmds.objExists('*:%s' % shaderName) is True:
+            if cmds.objExists('*:%s' % shaderName):
                 shaderName = '*:%s' % shaderName
             else:
                 raise RuntimeError('Shader %s couldn\'t be found.')
@@ -389,6 +433,7 @@ class ShaderUtility(object):
         MFnDependencyNode = OpenMaya.MFnDependencyNode(node)
         # Cycle through all attributes
         attributeCount = int(MFnDependencyNode.attributeCount())
+
         connections = []
         for i in xrange(attributeCount):
             # Get plug from attribute
@@ -404,7 +449,102 @@ class ShaderUtility(object):
                 )
         return connections
 
-    def copyShaderAttributes(self, shaderName, targetShader):
+    @staticmethod
+    def _connectPlug(sourcePlug, destinationPlug):
+        pAttribute = sourcePlug.attribute()
+        apiType = sourcePlug.attribute().apiType()
+
+        # Float Groups
+        if apiType == OpenMaya.MFn.kAttribute3Float:
+            for c in xrange(sourcePlug.numChildren()):
+                value = sourcePlug.child(c).asFloat()
+                destinationPlug.child(c).setFloat(value)
+            return
+
+        # TYPED
+        elif apiType == OpenMaya.MFn.kTypedAttribute:
+            pType = OpenMaya.MFnTypedAttribute(pAttribute).attrType()
+            # String
+            if pType == OpenMaya.MFnData.kString:
+                destinationPlug.setString(sourcePlug.asString())
+                return
+        # NUMBERS
+        if apiType == OpenMaya.MFn.kNumericAttribute:
+            pType = OpenMaya.MFnNumericAttribute(pAttribute).numericType()
+            if pType == OpenMaya.MFnNumericData.kBoolean:
+                destinationPlug.setBool(sourcePlug.asBool())
+                return
+            elif pType in [
+                    OpenMaya.MFnNumericData.kShort,
+                    OpenMaya.MFnNumericData.kInt,
+                    OpenMaya.MFnNumericData.kLong,
+                    OpenMaya.MFnNumericData.kByte
+            ]:
+                destinationPlug.setInt(sourcePlug.asInt())
+                return
+            elif pType in [
+                    OpenMaya.MFnNumericData.kFloat,
+                    OpenMaya.MFnNumericData.kDouble,
+                    OpenMaya.MFnNumericData.kAddr
+            ]:
+                destinationPlug.setDouble(sourcePlug.asDouble())
+                return
+        # Enum
+        elif apiType == OpenMaya.MFn.kEnumAttribute:
+            destinationPlug.setInt(sourcePlug.asInt())
+            return
+
+    def _getPlugValue(self, inPlug):
+        apiType = inPlug.attribute().apiType()
+        pAttribute = inPlug.attribute()
+
+        # Float Groups - rotate, translate, scale; Compounds
+        if apiType in [
+                OpenMaya.MFn.kAttribute3Double,
+                OpenMaya.MFn.kAttribute3Float,
+                OpenMaya.MFn.kCompoundAttribute
+        ]:
+            result = []
+            if inPlug.isCompound:
+                for c in xrange(inPlug.numChildren()):
+                    result.append(self._getPlugValue(inPlug.child(c)))
+                return result
+        # Distance
+        elif apiType in [OpenMaya.MFn.kDoubleLinearAttribute, OpenMaya.MFn.kFloatLinearAttribute]:
+            return inPlug.asMDistance().asCentimeters()
+        # Angle
+        elif apiType in [OpenMaya.MFn.kDoubleAngleAttribute, OpenMaya.MFn.kFloatAngleAttribute]:
+            return inPlug.asMAngle().asDegrees()
+        # TYPED
+        elif apiType == OpenMaya.MFn.kTypedAttribute:
+            pType = OpenMaya.MFnTypedAttribute(pAttribute).attrType()
+            # Matrix
+            if pType == OpenMaya.MFnData.kMatrix:
+                return OpenMaya.MFnMatrixData(inPlug.asMObject()).matrix()
+            # String
+            elif pType == OpenMaya.MFnData.kString:
+                return inPlug.asString()
+        # MATRIX
+        elif apiType == OpenMaya.MFn.kMatrixAttribute:
+            return OpenMaya.MFnMatrixData(inPlug.asMObject()).matrix()
+        # NUMBERS
+        elif apiType == OpenMaya.MFn.kNumericAttribute:
+            pType = OpenMaya.MFnNumericAttribute(pAttribute).numericType()
+            if pType == OpenMaya.MFnNumericData.kBoolean:
+                return inPlug.asBool()
+            elif pType in [OpenMaya.MFnNumericData.kShort, OpenMaya.MFnNumericData.kInt, OpenMaya.MFnNumericData.kLong, OpenMaya.MFnNumericData.kByte]:
+                return inPlug.asInt()
+            elif pType in [OpenMaya.MFnNumericData.kFloat, OpenMaya.MFnNumericData.kDouble, OpenMaya.MFnNumericData.kAddr]:
+                return inPlug.asDouble()
+        # Enum
+        elif apiType == OpenMaya.MFn.kEnumAttribute:
+            return inPlug.asInt()
+
+    @staticmethod
+    def transferShaderAttributes(shaderName, targetShader):
+        """ Copies shader attributes when duplicateing a shader
+        """
+
         if cmds.ls(shaderName, materials=True) == 0:
             return None
 
@@ -418,78 +558,6 @@ class ShaderUtility(object):
 
         # Cycle through all attributes
         attributeCount = int(sourceMFnDependencyNode.attributeCount())
-        connections = []
-
-        def _transferValues(sourcePlug, destinationPlug):
-            # Float Groups
-            if apiType == OpenMaya.MFn.kAttribute3Float:
-                for c in xrange(sourcePlug.numChildren()):
-                    value = sourcePlug.child(c).asFloat()
-                    destinationPlug.child(c).setFloat(value)
-                return
-
-            # TYPED
-            elif apiType == OpenMaya.MFn.kTypedAttribute:
-                pType = OpenMaya.MFnTypedAttribute(pAttribute).attrType()
-                # String
-                if pType == OpenMaya.MFnData.kString:
-                    destinationPlug.setString(sourcePlug.asString())
-                    return
-            # NUMBERS
-            if apiType == OpenMaya.MFn.kNumericAttribute:
-                pType = OpenMaya.MFnNumericAttribute(pAttribute).numericType()
-                if pType == OpenMaya.MFnNumericData.kBoolean:
-                    destinationPlug.setBool(sourcePlug.asBool())
-                    return
-                elif pType in [OpenMaya.MFnNumericData.kShort, OpenMaya.MFnNumericData.kInt, OpenMaya.MFnNumericData.kLong, OpenMaya.MFnNumericData.kByte]:
-                    destinationPlug.setInt(sourcePlug.asInt())
-                    return
-                elif pType in [OpenMaya.MFnNumericData.kFloat, OpenMaya.MFnNumericData.kDouble, OpenMaya.MFnNumericData.kAddr]:
-                    destinationPlug.setDouble(sourcePlug.asDouble())
-                    return
-            # Enum
-            elif apiType == OpenMaya.MFn.kEnumAttribute:
-                destinationPlug.setInt(sourcePlug.asInt())
-                return
-
-        def _getValue(inPlug):
-            # Float Groups - rotate, translate, scale; Compounds
-            if apiType in [OpenMaya.MFn.kAttribute3Double, OpenMaya.MFn.kAttribute3Float, OpenMaya.MFn.kCompoundAttribute]:
-                result = []
-                if inPlug.isCompound:
-                    for c in xrange(inPlug.numChildren()):
-                        result.append(_getValue(inPlug.child(c)))
-                    return result
-            # Distance
-            elif apiType in [OpenMaya.MFn.kDoubleLinearAttribute, OpenMaya.MFn.kFloatLinearAttribute]:
-                return inPlug.asMDistance().asCentimeters()
-            # Angle
-            elif apiType in [OpenMaya.MFn.kDoubleAngleAttribute, OpenMaya.MFn.kFloatAngleAttribute]:
-                return inPlug.asMAngle().asDegrees()
-            # TYPED
-            elif apiType == OpenMaya.MFn.kTypedAttribute:
-                pType = OpenMaya.MFnTypedAttribute(pAttribute).attrType()
-                # Matrix
-                if pType == OpenMaya.MFnData.kMatrix:
-                    return OpenMaya.MFnMatrixData(inPlug.asMObject()).matrix()
-                # String
-                elif pType == OpenMaya.MFnData.kString:
-                    return inPlug.asString()
-            # MATRIX
-            elif apiType == OpenMaya.MFn.kMatrixAttribute:
-                return OpenMaya.MFnMatrixData(inPlug.asMObject()).matrix()
-            # NUMBERS
-            elif apiType == OpenMaya.MFn.kNumericAttribute:
-                pType = OpenMaya.MFnNumericAttribute(pAttribute).numericType()
-                if pType == OpenMaya.MFnNumericData.kBoolean:
-                    return inPlug.asBool()
-                elif pType in [OpenMaya.MFnNumericData.kShort, OpenMaya.MFnNumericData.kInt, OpenMaya.MFnNumericData.kLong, OpenMaya.MFnNumericData.kByte]:
-                    return inPlug.asInt()
-                elif pType in [OpenMaya.MFnNumericData.kFloat, OpenMaya.MFnNumericData.kDouble, OpenMaya.MFnNumericData.kAddr]:
-                    return inPlug.asDouble()
-            # Enum
-            elif apiType == OpenMaya.MFn.kEnumAttribute:
-                return inPlug.asInt()
 
         for i in xrange(attributeCount):
             # Get plug from attribute
@@ -508,48 +576,36 @@ class ShaderUtility(object):
 
             # FLOAT ARRAY
             if apiType == OpenMaya.MFn.kAttribute3Float:
-                try:
-                    attrType = cmds.getAttr(sourceAttr, type=True)
-                    attrValue = cmds.getAttr(sourceAttr)[0]
-                    cmds.setAttr(
-                        destAttr, attrValue[0], attrValue[1], attrValue[2], type=attrType)
-                except:
-                    pass
+                attrType = cmds.getAttr(sourceAttr, type=True)
+                attrValue = cmds.getAttr(sourceAttr)
+                cmds.setAttr(
+                    destAttr, attrValue[0], attrValue[1], attrValue[2], type=attrType)
             # NUMBERS
             elif apiType == OpenMaya.MFn.kNumericAttribute:
                 pType = OpenMaya.MFnNumericAttribute(pAttribute).numericType()
                 if pType == OpenMaya.MFnNumericData.kBoolean:
-                    try:
-                        attrValue = cmds.getAttr(sourceAttr)
-                        cmds.setAttr(destAttr, attrValue)
-                    except:
-                        pass
-                elif pType in [OpenMaya.MFnNumericData.kFloat, OpenMaya.MFnNumericData.kDouble]:
-                    try:
-                        attrValue = cmds.getAttr(sourceAttr)
-                        cmds.setAttr(destAttr, attrValue)
-                    except:
-                        pass
-            # ENUM
-            elif apiType == OpenMaya.MFn.kEnumAttribute:
-                try:
                     attrValue = cmds.getAttr(sourceAttr)
                     cmds.setAttr(destAttr, attrValue)
-                except:
-                    pass
+                elif pType in [OpenMaya.MFnNumericData.kFloat, OpenMaya.MFnNumericData.kDouble]:
+                    attrValue = cmds.getAttr(sourceAttr)
+                    cmds.setAttr(destAttr, attrValue)
+            # ENUM
+            elif apiType == OpenMaya.MFn.kEnumAttribute:
+                attrValue = cmds.getAttr(sourceAttr)
+                cmds.setAttr(destAttr, attrValue)
             # TYPED
             elif apiType == OpenMaya.MFn.kTypedAttribute:
                 pType = OpenMaya.MFnTypedAttribute(pAttribute).attrType()
                 if pType == OpenMaya.MFnData.kString:
-                    try:
-                        attrType = cmds.getAttr(sourceAttr, type=True)
-                        attrValue = cmds.getAttr(sourceAttr)
-                        cmds.setAttr(destAttr, attrValue, type=attrType)
-                    except:
-                        pass
+                    attrType = cmds.getAttr(sourceAttr, type=True)
+                    attrValue = cmds.getAttr(sourceAttr)
+                    cmds.setAttr(destAttr, attrValue, type=attrType)
 
-    def duplicateShader(self, shaderName, choice=None, apply=True, isOverride=True):
-        if apply is False:
+    def duplicateShader(self, shaderName, choice=None, applyOp=True, isOverride=True):
+        """ Duplicate shader
+        """
+
+        if applyOp is False:
             return
 
         if isOverride is True:
@@ -567,11 +623,12 @@ class ShaderUtility(object):
         # Create new shader
         newShader = None
         if isOverride is True:
-            if len(cmds.ls(name, materials=True)) != 0:
+            if cmds.ls(name, materials=True):
                 newShader = name
             else:
                 newShader = cmds.shadingNode(
                     OPTION['type'], name=name, asShader=True)
+
         if isOverride is False:
             newShader = cmds.shadingNode(cmds.objectType(
                 shaderName), name='%sDuplicate#' % (shaderName), asShader=True)
@@ -579,24 +636,31 @@ class ShaderUtility(object):
         connections = self._getConnectedInputConnections(shaderName)
 
         def _connect(cnx):
-            source = connection['source']
+            source = cnx['source']
             # float3 to float1 conversion
-            if isOverride is True and (OPTION['type'] == SHADER_TYPES[1] or OPTION['type'] == SHADER_TYPES[2] or OPTION['type'] == SHADER_TYPES[3]) and connection['destinationAttribute'] == 'opacity':
-                source = connection['source'] + R
-            destination = newShader + '.' + connection['destinationAttribute']
+            if isOverride is True and (
+                    OPTION['type'] == SHADER_TYPES[1] or
+                    OPTION['type'] == SHADER_TYPES[2] or
+                    OPTION['type'] == SHADER_TYPES[3]
+                ) and (
+                    cnx['destinationAttribute'] == 'opacity'
+                ):
+                source = cnx['source'] + R
+
+            destination = newShader + '.' + cnx['destinationAttribute']
             if cmds.isConnected(source, destination) is False:
                 cmds.connectAttr(source, destination, force=True)
 
         if isOverride is True:
             # Shader Default options
             if OPTION['mode'] == 0:  # Keep all connections
-                'Nothing to do here.'
+                pass
             if OPTION['mode'] == 1:  # No connections
-                'Nothing to do here.'
+                pass
             if OPTION['mode'] == 2:  # Keep color and opacity
-                'Nothing to do here.'
+                pass
             if OPTION['mode'] == 3:  # Keep opacity
-                'Nothing to do here.'
+                pass
             if OPTION['mode'] == 4:  # Red, keep opacity
                 cmds.setAttr(newShader + '.color', 1.0, 0.0, 0.0)
                 cmds.setAttr(newShader + '.shadeMode', 2)
@@ -624,7 +688,7 @@ class ShaderUtility(object):
                 if OPTION['mode'] == 0:  # Keep all connections
                     _connect(connection)
                 if OPTION['mode'] == 1:  # No connections
-                    'Nothing to do here.'
+                    pass
                 if OPTION['mode'] == 2:  # Keep color and opacity
                     if d == 'color' or d == 'opacity':
                         _connect(connection)
@@ -651,7 +715,7 @@ class ShaderUtility(object):
         group = d.setdefault('', [])
         group.append('')
 
-        for shaderName in self.data.keys():
+        for shaderName in self.data:
             if self.data[shaderName]['light']:
                 group = d.setdefault('<Lights>', [])
                 group.append(shaderName)
@@ -666,7 +730,7 @@ class ShaderUtility(object):
                 group.append(shaderName)
 
         # Shaders
-        for string in self.data.keys():
+        for string in self.data:
             if '_' in string:
                 prefix, suffix = map(str.strip, str(string).split("_", 1))
                 group = d.setdefault(prefix, [])
@@ -677,7 +741,6 @@ class ShaderUtility(object):
             for key in dCopy:
                 if len(dCopy[key]) <= 1:
                     d.pop(key, None)
-
         return d
 
     def getShaderList(self, excludeOverrides=False, excludeUnused=False):
@@ -690,9 +753,11 @@ class ShaderUtility(object):
                 continue
             arr.append(item)
         self.shaderList = util.natsort(arr)
+
         return self.shaderList
 
-    def stripSuffix(self, name):
+    @staticmethod
+    def stripSuffix(name):
         temp = 'xxx'
         idx = name.find('_')
         if idx == -1:
@@ -700,7 +765,6 @@ class ShaderUtility(object):
 
         # Replace basename temporarily
         basename = name[0:idx]
-        suffixes = name[idx:]
         name = name.replace(basename, temp)
 
         filterByMode = [
@@ -728,7 +792,8 @@ class ShaderUtility(object):
             temp, basename
         )
 
-    def getMode(self, name):
+    @staticmethod
+    def getMode(name):
         temp = 'xxx'
         idx = name.find('_')
         if idx == -1:
@@ -736,7 +801,6 @@ class ShaderUtility(object):
 
         # Replace basename temporarily
         basename = name[0:idx]
-        suffixes = name[idx:]
         name = name.replace(basename, temp)
 
         filterByMode = [
