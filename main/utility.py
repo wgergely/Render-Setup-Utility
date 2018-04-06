@@ -1,18 +1,22 @@
-import maya.app.renderSetup.model.selector as selector
-import maya.app.renderSetup.model.collection as collection
-import maya.app.renderSetup.model.renderSetup as renderSetup
+"""
+Module doc stub.
+"""
 
 import maya.api.OpenMaya as OpenMaya
+import maya.app.renderSetup.model.collection as collection
+import maya.app.renderSetup.model.renderSetup as renderSetup
+import maya.app.renderSetup.model.selector as selector
 import maya.cmds as cmds
-
 import RenderSetupUtility.main.shaderUtility as shaderUtility
 
+
 def maya_useNewAPI():
-	"""
-	The presence of this function tells Maya that the plugin produces, and
-	expects to be passed, objects created using the Maya Python API 2.0.
-	"""
-	pass
+    """
+    The presence of this function tells Maya that the plugin produces, and
+    expects to be passed, objects created using the Maya Python API 2.0.
+    """
+    pass
+
 
 LAYER_SUFFIX = '_rsLayer'
 COLLECTION_SUFFIX = '_collection'
@@ -21,96 +25,124 @@ LIGHTS_ON = 'lights_on'
 LIGHTS_OFF = 'lights_off'
 TEMP_NAME = '_tempMeshShape'
 
+"""
+Override attributes
+"""
 OVERRIDE_ATTRIBUTES = (
     {
-		'long': 'primaryVisibility',
-		'short': 'vis',
-		'nice': 'Visible in Camera',
-		'type': OpenMaya.MFnNumericData.kBoolean,
-		'default': True,
-		'custom': ('c-','')
-	},
+        'long': 'primaryVisibility',
+        'short': 'vis',
+        'nice': 'Visible in Camera',
+        'type': OpenMaya.MFnNumericData.kBoolean,
+        'default': True,
+        'custom': ('prim-', '')
+    },
     {
-		'long': 'aiVisibleInDiffuse',
-		'short': 'ai_vid',
-		'nice': 'Visible in Diffuse',
-		'type': OpenMaya.MFnNumericData.kBoolean,
-		'default': True,
-		'custom': ('d-','')
-	},
+        'long': 'aiVisibleInDiffuseReflection',
+        'short': 'ai_visr',
+        'nice': 'Visible in Diffuse Reflection',
+        'type': OpenMaya.MFnNumericData.kBoolean,
+        'default': False,
+        'custom': ('dr-', '')
+    },
     {
-		'long': 'aiVisibleInGlossy',
-		'short': 'ai_vig',
-		'nice': 'Visible in Glossy',
-		'type': OpenMaya.MFnNumericData.kBoolean,
-		'default': True,
-		'custom': ('g-','')
-	},
+        'long': 'aiVisibleInDiffuseTransmission',
+        'short': 'ai_vidt',
+        'nice': 'Visible in Diffuse Transmission',
+        'type': OpenMaya.MFnNumericData.kBoolean,
+        'default': False,
+        'custom': ('dt-', '')
+    },
     {
-		'long': 'visibleInReflections',
-		'short': 'vir',
-		'nice': 'Visible in Reflections',
-		'type': OpenMaya.MFnNumericData.kBoolean,
-		'default': True,
-		'custom': ('rl-','')
-	},
+        'long': 'aiVisibleInSpecularReflection',
+        'short': 'ai_visr',
+        'nice': 'Visible in Specular Reflection',
+        'type': OpenMaya.MFnNumericData.kBoolean,
+        'default': False,
+        'custom': ('sr-', '')
+    },
     {
-		'long': 'visibleInRefractions',
-		'short': 'vif',
-		'nice': 'Visible in Refractions',
-		'type': OpenMaya.MFnNumericData.kBoolean,
-		'default': True,
-		'custom': ('rr-','')
-	},
+        'long': 'aiVisibleInSpecularTransmission',
+        'short': 'ai_vist',
+        'nice': 'Visible in Specular Transmission',
+        'type': OpenMaya.MFnNumericData.kBoolean,
+        'default': False,
+        'custom': ('st-', '')
+    },
     {
-		'long': 'aiOpaque',
-		'short': 'ai_opaque',
-		'nice': 'Opaque',
-		'type': OpenMaya.MFnNumericData.kBoolean,
-		'default': True,
-		'custom': ('','tr-')
-	},
+        'long': 'aiVisibleInVolume',
+        'short': 'ai_viv',
+        'nice': 'Visible in Volume',
+        'type': OpenMaya.MFnNumericData.kBoolean,
+        'default': False,
+        'custom': ('v-', '')
+    },
     {
-		'long': 'castsShadows',
-		'short':'csh',
-		'nice': 'Cast Shadows',
-		'type': OpenMaya.MFnNumericData.kBoolean,
-		'default': True,
-		'custom': ('cs-','')
-	},
+        'long': 'visibleInReflections',
+        'short': 'vir',
+        'nice': 'Visible in Reflections',
+        'type': OpenMaya.MFnNumericData.kBoolean,
+        'default': False,
+        'custom': ('rl-', '')
+    },
     {
-		'long':'receiveShadows',
-		'short':'rcsh',
-		'nice': 'Recieve Shadows',
-		'type':OpenMaya.MFnNumericData.kBoolean,
-		'default':True,
-		'custom':('rs-','')
-	},
+        'long': 'visibleInRefractions',
+        'short': 'vif',
+        'nice': 'Visible in Refractions',
+        'type': OpenMaya.MFnNumericData.kBoolean,
+        'default': False,
+        'custom': ('rr-', '')
+    },
     {
-		'long': 'aiSelfShadows',
-		'short': 'ai_self_shadows',
-		'nice': 'Cast Self Shadows',
-		'type': OpenMaya.MFnNumericData.kBoolean,
-		'default': True,
-		'custom': ('ss-','')
-	},
+        'long': 'aiOpaque',
+        'short': 'ai_opaque',
+        'nice': 'Opaque',
+        'type': OpenMaya.MFnNumericData.kBoolean,
+        'default': True,
+        'custom': ('', 'tr-')
+    },
     {
-		'long':'doubleSided',
-		'short':'ds',
-		'nice': 'Double Sided',
-		'type':OpenMaya.MFnNumericData.kBoolean,
-		'default':True,
-		'custom':('ds-','')
-	},
+        'long': 'castsShadows',
+        'short': 'csh',
+        'nice': 'Cast Shadows',
+        'type': OpenMaya.MFnNumericData.kBoolean,
+        'default': True,
+        'custom': ('cs-', '')
+    },
     {
-		'long':'aiMatte',
-		'short':'ai_matte',
-		'nice': 'Matte',
-		'type':OpenMaya.MFnNumericData.kBoolean,
-		'default':False,
-		'custom':('M-','')
-	}
+        'long': 'receiveShadows',
+        'short': 'rcsh',
+        'nice': 'Recieve Shadows',
+        'type': OpenMaya.MFnNumericData.kBoolean,
+        'default': True,
+        'custom': ('rs-', '')
+    },
+    {
+        'long': 'aiSelfShadows',
+        'short': 'ai_self_shadows',
+        'nice': 'Cast Self Shadows',
+        'type': OpenMaya.MFnNumericData.kBoolean,
+        'default': True,
+        'custom': ('ss-', '')
+    },
+    {
+        'long': 'doubleSided',
+        'short': 'ds',
+        'nice': 'Double Sided',
+        'type': OpenMaya.MFnNumericData.kBoolean,
+        'default': True,
+        'custom': ('ds-', '')
+    },
+    {
+        'long': 'aiMatte',
+        'short': 'ai_matte',
+        'nice': 'Matte',
+        'type': OpenMaya.MFnNumericData.kBoolean,
+        'default': False,
+        'custom': ('M-', '')
+    }
 )
+
 
 class Utility(object):
     '''
@@ -158,7 +190,6 @@ class Utility(object):
         def switchLayer(inValue, switchLayer=False):
             lyrs = renderSetup.instance().getRenderLayers()
 
-
             if inValue == self.defaultName:
                 l = renderSetup.instance().getDefaultRenderLayer()
                 if switchLayer:
@@ -196,7 +227,8 @@ class Utility(object):
 
             # Find collection in the current layer
 
-            found = [c for c in colls if '{0}{1}'.format(inValue, COLLECTION_SUFFIX) in c.name()]
+            found = [c for c in colls if '{0}{1}'.format(
+                inValue, COLLECTION_SUFFIX) in c.name()]
 
             if found != []:
                 self._extendActiveCollection(inCollection=found[0], valid=True)
@@ -221,10 +253,11 @@ class Utility(object):
                 # Check for existing collection with
                 for coll in colls:
                     if coll.name() == inValue:
-                        print('# Collection \'' + coll.name() + '\' already exists in \'' + self.activeLayer.name() + '\'')
+                        print('# Collection \'' + coll.name() +
+                              '\' already exists in \'' + self.activeLayer.name() + '\'')
                         return None
                 c = l.createCollection(inValue)
-                self._extendActiveCollection(c,valid=True)
+                self._extendActiveCollection(c, valid=True)
 
                 # Add overrides
                 if addOverrides is True:
@@ -236,7 +269,8 @@ class Utility(object):
                         exists = False
                         if item.name() == string:
                             exists = True
-                            print('# Collection \'' + item.name() + '\' already exists in \'' + self.activeLayer.name() + '\'')
+                            print('# Collection \'' + item.name() +
+                                  '\' already exists in \'' + self.activeLayer.name() + '\'')
                             break
                     if exists is False:
                         c = l.createCollection(string)
@@ -266,6 +300,7 @@ class Utility(object):
             # 0 = All, 1 = Transforms, 2 = Shapes, 4 = Lights, 7 = Cameras
             self.activeCollection.getSelector().setFilterType(inFilterType)
             self.activeCollection.selection.set(inValue)
+
         def removeSelection(inValue):
             self.activeCollection.selection.remove(s)
 
@@ -275,7 +310,7 @@ class Utility(object):
             if self.activeLayer is None:
                 return None
 
-            ov=self.activeCollection.getOverrides()
+            ov = self.activeCollection.getOverrides()
 
             # Return whole list
             if inValue is None:
@@ -289,7 +324,7 @@ class Utility(object):
                     return None
             # Return by name
             if isinstance(inValue, basestring):
-                found=False
+                found = False
                 for o in ov:
                     try:
                         if o.attributeName() == inValue:
@@ -299,6 +334,7 @@ class Utility(object):
                         print('# Couldn\'t get override based on that name.')
                 if found is False:
                     return None
+
         def setOverrideValue(inName, inValue=None):
             ov = self.activeCollection.overrides()
 
@@ -309,17 +345,18 @@ class Utility(object):
                 except:
                     print('# Couldn\'t set override attribute value.')
                     return None
+
         def getOverrideValue(inName):
             ov = self.activeCollection.overrides()
             for o in ov:
                 try:
                     if o.attributeName() == inName:
-                         return o.getAttrValue()
+                        return o.getAttrValue()
                 except:
                     print('# Couldn\'t get override attribute value.')
                     return None
 
-        def _extendActiveLayer(inLayer = None, valid=True):
+        def _extendActiveLayer(inLayer=None, valid=True):
             if inLayer.name() == self.defaultName:
                 self.activeLayer = self.defaultLayer
                 self.activeLayer.switchLayer = switchLayer
@@ -337,7 +374,8 @@ class Utility(object):
             else:
                 self.activeLayer = None
             return self.activeLayer
-        def _extendActiveCollection(inCollection = None, valid=True):
+
+        def _extendActiveCollection(inCollection=None, valid=True):
             if valid:
                 self.activeCollection = inCollection
                 self.activeCollection.overrides = overrides
@@ -357,17 +395,19 @@ class Utility(object):
 
             # Add overrides
             try:
-	            for index, item in enumerate(self.overrideAttributes):
-	                attr = self.overrideAttributes[index]['long']
-	                value = self.overrideAttributes[index]['default']
+                for index, item in enumerate(self.overrideAttributes):
+                    attr = self.overrideAttributes[index]['long']
+                    value = self.overrideAttributes[index]['default']
 
-	                o = self.activeCollection.createOverride('%s#' % (attr), 'absOverride')
-	                o.finalize('%s.%s'%(TEMP_NAME,attr))
-	                o.setAttrValue(value)
-	                self.activeCollection.overrides = overrides
+                    o = self.activeCollection.createOverride(
+                        '%s#' % (attr), 'absOverride')
+                    o.finalize('%s.%s' % (TEMP_NAME, attr))
+                    o.setAttrValue(value)
+                    self.activeCollection.overrides = overrides
             except:
                 self.activeCollection.overrides = overrides
-                raise RuntimeError('An error occured adding default overrides.')
+                raise RuntimeError(
+                    'An error occured adding default overrides.')
 
             if cmds.objExists(TEMP_NAME):
                 p = cmds.listRelatives(TEMP_NAME, allParents=True)[0]
@@ -385,14 +425,15 @@ class Utility(object):
                 OpenMaya.MFnDagNode().create('mesh', name=TEMP_NAME)
             # Add overrides
             try:
-	            for index, item in enumerate(self.overrideAttributes):
-	                attr = self.overrideAttributes[index]['long']
-	                value = self.overrideAttributes[index]['default']
+                for index, item in enumerate(self.overrideAttributes):
+                    attr = self.overrideAttributes[index]['long']
+                    value = self.overrideAttributes[index]['default']
 
-	                o = self.activeCollection.createOverride('%s#' % (attr), 'absOverride')
-	                o.finalize('%s.%s'%(TEMP_NAME,attr))
-	                o.setAttrValue(value)
-	                self.activeCollection.overrides = overrides
+                    o = self.activeCollection.createOverride(
+                        '%s#' % (attr), 'absOverride')
+                    o.finalize('%s.%s' % (TEMP_NAME, attr))
+                    o.setAttrValue(value)
+                    self.activeCollection.overrides = overrides
             except:
                 self.activeCollection.overrides = overrides
                 print('# An error occured adding default overrides.')
@@ -400,12 +441,14 @@ class Utility(object):
             if cmds.objExists(TEMP_NAME):
                 p = cmds.listRelatives(TEMP_NAME, allParents=True)[0]
                 cmds.delete(p)
+
         def _addShaderOverride():
             '''
             Adds a ShaderOverride to the activeCollection.
             '''
             SHADER_OVERRIDE_DEFAULTNAME = '%sShaderOverride#' % self.activeCollection.name()
-            o = self.activeCollection.createOverride(SHADER_OVERRIDE_DEFAULTNAME, 'shaderOverride')
+            o = self.activeCollection.createOverride(
+                SHADER_OVERRIDE_DEFAULTNAME, 'shaderOverride')
             return o
 
         self._extendActiveLayer = _extendActiveLayer
@@ -424,8 +467,10 @@ class Utility(object):
         self.overrides = overrides
 
         # Set activeLayer on init
-        self._extendActiveLayer(renderSetup.instance().getVisibleRenderLayer(), valid=True)
+        self._extendActiveLayer(
+            renderSetup.instance().getVisibleRenderLayer(), valid=True)
     # Methods
+
     def removeMissingSelections(self):
         lyrs = renderSetup.instance().getRenderLayers()
         for l in lyrs:
@@ -437,7 +482,8 @@ class Utility(object):
                     validList = []
                     if selector.hasMissingObjects():
                         for item in items:
-                            if cmds.objExists(item): validList.append(item)
+                            if cmds.objExists(item):
+                                validList.append(item)
                             selector.staticSelection.set(validList)
 
     def layer(self, inValue=None):
@@ -452,7 +498,7 @@ class Utility(object):
                 self._extendActiveLayer(lyrs[inValue], valid=True)
                 return self.activeLayer
             except:
-                self._extendActiveLayer(inLayer = None, valid=False)
+                self._extendActiveLayer(inLayer=None, valid=False)
                 print('# Couldn\'t get render layer of that index.')
                 return self.activeLayer
         # Return by name
@@ -467,5 +513,6 @@ class Utility(object):
             if found is False:
                 self.addLayer(inValue)
                 return self.activeLayer
+
     def layers(self):
         return renderSetup.instance().getRenderLayers()
