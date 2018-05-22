@@ -1,26 +1,24 @@
-import maya.cmds as cmds
+"""
+Autoconnect.
+"""
+
+# pylint: disable=C0103, E0401
+
+import base64
 import os
 import os.path as path
 import string
 from shutil import copy
-import _winreg
-import base64
-
-from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
-import maya.OpenMayaUI as OpenMayaUI
-import maya.api.OpenMaya as OpenMaya
-import PySide2.QtCore as QtCore
-import PySide2.QtGui as QtGui
-import PySide2.QtWidgets as QtWidgets
-from PySide2.QtCore import QProcess
 import shiboken2
-
+import _winreg
+import PySide2.QtWidgets as QtWidgets
+import maya.cmds as cmds
+import maya.OpenMayaUI as OpenMayaUI
 import RenderSetupUtility.ac.templates as templates
-from RenderSetupUtility.main.shaderUtility import ShaderUtility
 import RenderSetupUtility.main.renderOutput as renderOutput
+from RenderSetupUtility.main.shaderUtility import ShaderUtility
 
-# Maya default: sourceImages, Studio AKA default: sourceimages
-SOURCE_IMAGES = 'sourceimages'
+SOURCE_IMAGES = 'textures'
 
 # When parsing directories look for these extensions types.
 ACCEPT_TYPES = (
@@ -40,23 +38,25 @@ ACCEPT_TYPES = (
 )
 
 ATTRIBTE_TYPES = (
-    {'attribute': 'color',              'type': 'float3', 'name': 'Diffuse Color'},
-    {'attribute': 'Kd',                 'type': 'float1', 'name': 'Diffuse Color Weight'},
-    {'attribute': 'diffuseRoughness',   'type': 'float1', 'name': 'Diffuse Roughness'},
-    {'attribute': 'directDiffuse',      'type': 'float1', 'name': 'Direct Diffuse Weight'},
-    {'attribute': 'indirectDiffuse',    'type': 'float1', 'name': 'Indirect Diffuse Weight'},
-    {'attribute': 'KsColor',            'type': 'float3', 'name': 'Specular Color'},
-    {'attribute': 'Ks',                 'type': 'float1', 'name': 'Specular Weight'},
-    {'attribute': 'specularRoughness',  'type': 'float1', 'name': 'Specular Roughness'},
+    {'attribute': 'color', 'type': 'float3', 'name': 'Diffuse Color'},
+    {'attribute': 'Kd', 'type': 'float1', 'name': 'Diffuse Color Weight'},
+    {'attribute': 'diffuseRoughness', 'type': 'float1', 'name': 'Diffuse Roughness'},
+    {'attribute': 'directDiffuse', 'type': 'float1', 'name': 'Direct Diffuse Weight'},
+    {'attribute': 'indirectDiffuse', 'type': 'float1', 'name': 'Indirect Diffuse Weight'},
+    {'attribute': 'KsColor', 'type': 'float3', 'name': 'Specular Color'},
+    {'attribute': 'Ks', 'type': 'float1', 'name': 'Specular Weight'},
+    {'attribute': 'specularRoughness', 'type': 'float1', 'name': 'Specular Roughness'},
     {'attribute': 'specularAnisotropy', 'type': 'float1', 'name': 'Specular Anisotropy'},
-    {'attribute': 'specularRotation',   'type': 'float1', 'name': 'Specular Rotation'},
-    {'attribute': 'KrColor',            'type': 'float3', 'name': 'Reflection Color'},
-    {'attribute': 'Kr',                 'type': 'float1', 'name': 'Reflection Weight'},
-    {'attribute': 'KtColor',            'type': 'float3', 'name': 'Refraction Color'},
-    {'attribute': 'Kt',                 'type': 'float1', 'name': 'Refraction Weight'},
-    {'attribute': 'emissionColor',      'type': 'float3', 'name': 'Emission Color'},
-    {'attribute': 'opacity',            'type': 'float3', 'name': 'Opacity'}
+    {'attribute': 'specularRotation', 'type': 'float1', 'name': 'Specular Rotation'},
+    {'attribute': 'KrColor', 'type': 'float3', 'name': 'Reflection Color'},
+    {'attribute': 'Kr', 'type': 'float1', 'name': 'Reflection Weight'},
+    {'attribute': 'KtColor', 'type': 'float3', 'name': 'Refraction Color'},
+    {'attribute': 'Kt', 'type': 'float1', 'name': 'Refraction Weight'},
+    {'attribute': 'emissionColor', 'type': 'float3', 'name': 'Emission Color'},
+    {'attribute': 'opacity', 'type': 'float3', 'name': 'Opacity'}
 )
+
+
 
 def getAdobePath(appName):
     """
@@ -79,11 +79,12 @@ def getAdobePath(appName):
     versionNumbers = sorted([float(x) for x in subkeys], reverse=True)
     for v in versionNumbers:
         try:
-            RawKey = _winreg.OpenKey(Registry, 'SOFTWARE\Adobe\%s\%s' % (appName, str(v)))
+            RawKey = _winreg.OpenKey(
+                Registry, r'SOFTWARE\Adobe\%s\%s' % (appName, str(v)))
             i = 0
             while 1:
                 name, value, type = _winreg.EnumValue(RawKey, i)
-                attr = {'path': value, 'version':v}
+                attr = {'path': value, 'version': v}
                 if os.path.isdir(value):
                     _winreg.CloseKey(RawKey)
                     return attr
@@ -92,15 +93,17 @@ def getAdobePath(appName):
             pass
         _winreg.CloseKey(RawKey)
         return None
-        #break
+        # break
+
+
 def exportCamera():
     import tempfile
 
     AE_EXPORT_SET = 'aeExportSet'
     AE_MAIN_CAMERA = 'camera'
     AE_CAMERA = '_MayaCamera_'
-    startFrame = cmds.playbackOptions(q=True,minTime=True)
-    endFrame = cmds.playbackOptions(q=True,maxTime=True)
+    startFrame = cmds.playbackOptions(q=True, minTime=True)
+    endFrame = cmds.playbackOptions(q=True, maxTime=True)
 
     if cmds.objExists(AE_MAIN_CAMERA) is False:
         raise RuntimeError('Make sure the main camera is called \'camera\'')
@@ -119,13 +122,14 @@ def exportCamera():
         if cmds.nodeType(shape) == 'camera':
             cameraShape = shape
 
-            cmds.duplicate(AE_MAIN_CAMERA, name=AE_CAMERA, smartTransform=False, upstreamNodes=False, inputConnections=False)
+            cmds.duplicate(AE_MAIN_CAMERA, name=AE_CAMERA, smartTransform=False,
+                           upstreamNodes=False, inputConnections=False)
             cmds.parent(AE_CAMERA, world=True)
 
             attrs = cmds.listAttr(AE_CAMERA, locked=True)
             if attrs is not None:
                 for attr in attrs:
-                    cmds.setAttr('%s.%s'%(AE_CAMERA,attr), lock=False)
+                    cmds.setAttr('%s.%s' % (AE_CAMERA, attr), lock=False)
                 try:
                     cmds.parent(AE_CAMERA, world=True)
                 except:
@@ -133,26 +137,18 @@ def exportCamera():
             parentContraint = cmds.parentConstraint(AE_MAIN_CAMERA, AE_CAMERA)
 
             # Bake Camera
-            cmds.bakeResults(AE_CAMERA, t=(startFrame,endFrame))
+            cmds.bakeResults(AE_CAMERA, t=(startFrame, endFrame))
             cmds.delete(parentContraint)
             break
 
     tempDir = tempfile.gettempdir()
     tempName = '_MayaCamera_.ma'
-    path = os.path.join(tempDir,tempName)
+    path = os.path.join(tempDir, tempName)
     path = os.path.normpath(path)
     cmds.select(AE_CAMERA)
-    cmds.file( path, type='mayaAscii', exportSelected=True, channels=True, f=True)
+    cmds.file(path, type='mayaAscii',
+              exportSelected=True, channels=True, f=True)
     cmds.delete(AE_CAMERA)
-
-    # There's a bug in After Effects where the camera fails to import if the maya ascii file contains any '{}' characters.
-    # UPDATE: it seems the import fails if there are any aov's in the current scene
-    # Eg. a file with the line
-    # setAttr ".aal" -type "attributeAlias" {"ai_aov_Z","aiCustomAOVs[0]"} ;
-    # will fail to import but when removed seems to be importing swimmingly.
-    #
-    # The only workaround I can think of is to either make sure there are no aiAOVs present in the maya scene,
-    # or to manually find and remove the invalid characters from the exported file.
 
     INVALID_CHARACTERS = '{}'
 
@@ -173,8 +169,8 @@ def exportCamera():
     idxs = list(sorted(set(idxs)))
 
     # Let's remove the lines containing the invalid lines
-    for index in idxs[::-1]: # reverse the list
-       lines.pop(index)
+    for index in idxs[::-1]:  # reverse the list
+        lines.pop(index)
 
     # Write the maya file
     MAYA_ASCII_DATA = '\n'.join(lines)
@@ -183,11 +179,14 @@ def exportCamera():
     f.close()
 
     return path
+
+
 def raiseError(item, string):
     if item is True:
         pass
     else:
         raise RuntimeError(string)
+
 
 class SceneInfo(object):
     """
@@ -200,13 +199,17 @@ class SceneInfo(object):
     def __init__(self):
         self.isSceneSaved = cmds.file(query=True, exists=True)
 
-        self.startFrame = cmds.getAttr(renderOutput.DEFAULTS_NODE + '.startFrame')
+        self.startFrame = cmds.getAttr(
+            renderOutput.DEFAULTS_NODE + '.startFrame')
         self.endFrame = cmds.getAttr(renderOutput.DEFAULTS_NODE + '.endFrame')
-        self.duration = range(int(self.startFrame), int(self.endFrame+1))
+        self.duration = range(int(self.startFrame), int(self.endFrame + 1))
         self.currentTime = cmds.currentUnit(query=True, time=True)
-        self.frameRate = [t for t in renderOutput.TIME_TEMPLATE if self.currentTime == t['name']][0]['fps']
-        self.currentWidth = cmds.getAttr('%s.width' % renderOutput.RESOLUTION_NODE)
-        self.currentHeight = cmds.getAttr('%s.height' % renderOutput.RESOLUTION_NODE)
+        self.frameRate = [
+            t for t in renderOutput.TIME_TEMPLATE if self.currentTime == t['name']][0]['fps']
+        self.currentWidth = cmds.getAttr(
+            '%s.width' % renderOutput.RESOLUTION_NODE)
+        self.currentHeight = cmds.getAttr(
+            '%s.height' % renderOutput.RESOLUTION_NODE)
 
         if self.isSceneSaved is False:
             self.sceneName = None
@@ -218,52 +221,44 @@ class SceneInfo(object):
         self.sceneName = cmds.file(query=True, sceneName=True, shortName=True)
         self.scenePath = cmds.file(query=True, expandName=True)
         self.workspace = cmds.workspace(query=True, rootDirectory=True)
-
-        sourceImages = ''
-        # checking for lower/upper case discrepancy - eg. Studio AKA project template is all lower case.
-        for item in [f for f in os.listdir(self.workspace) if f.lower() == 'sourceImages'.lower()]:
-            sourceImages = item
-            break
-        self.sourceImages = path.join(self.workspace, sourceImages)
+        self.sourceImages = path.join(self.workspace, SOURCE_IMAGES)
 
 
 class AutoConnect(SceneInfo):
-    """
-    Querries the 'workspace/imageSource' folder and collects all folders and their contents corresponding
-    to shader names in the current scene.
-    doIt() - Connects the found image sources to the corresponding scene shader based on the name suffix assignments.
+    """Querries the 'workspace/imageSource' folder and collects all folders and
+    their contents corresponding to shader names in the current scene.
+
+    doIt() - Connects the found image sources to the corresponding
+    scene shader based on the name suffix assignments.
     """
 
     obj = getAdobePath('Photoshop')
     if obj:
-        PHOTOSHOP_PATH = os.path.normpath(os.path.join(obj['path'], 'Photoshop.exe'))
+        PHOTOSHOP_PATH = os.path.normpath(
+            os.path.join(obj['path'], 'Photoshop.exe'))
     else:
         PHOTOSHOP_PATH = None
 
     AFTER_EFFECTS_PATH = None
     obj = getAdobePath('After Effects')
     if obj:
-        AFTER_EFFECTS_PATH = os.path.normpath(os.path.join(obj['path'], 'AfterFX.exe'))
+        AFTER_EFFECTS_PATH = os.path.normpath(
+            os.path.join(obj['path'], 'AfterFX.exe'))
 
     def __init__(self):
         super(AutoConnect, self).__init__()
-
         self.DATA = {}
 
-        # Check if the scene is saved before continueing
         if self.isSceneSaved is False:
-            print('# Error. Make sure the scene is saved before continuing. #')
             return None
-            # raise RuntimeError('Scene is not saved.')
 
-        # List and loop through all folders found inside the sourceImages folder.
-        directories = [d for d in os.listdir(self.sourceImages) if os.path.isdir(os.path.join(self.sourceImages, d))]
-        shaderList = ShaderUtility().getShaderList(excludeOverrides=True, excludeUnused=False)
+        directories = [d for d in os.listdir(self.sourceImages) if os.path.isdir(
+            os.path.join(self.sourceImages, d))]
+        shaderList = ShaderUtility().getShaderList(
+            excludeOverrides=True, excludeUnused=False)
 
         for directory in directories:
-
-            # Skip folders not corresponding to shader names.
-            if [shader for shader in shaderList if directory == shader] == []:
+            if not (f for f in shaderList if f == directory):
                 continue
 
             children = {}
@@ -278,7 +273,8 @@ class AutoConnect(SceneInfo):
 
                 # Match name suffixes with the attributes list
 
-                attributesFound = [f for f in ATTRIBTE_TYPES if str('_' + f['attribute'].lower()) in item.lower()]
+                attributesFound = [f for f in ATTRIBTE_TYPES if str(
+                    '_' + f['attribute'].lower()) in item.lower()]
                 if attributesFound == []:
                     continue
 
@@ -308,61 +304,74 @@ class AutoConnect(SceneInfo):
                 title='Shader Attribute Already Connected',
                 message='%s already has a custom connection to %s.\
                 \nShall I replace it with the found source?\n> %s <' % (
-                                                                c['destination'],
-                                                                cmds.connectionInfo(c['destination'],
-                                                                sourceFromDestination=True), '%s.%s' % (c['name'],c['ext'])
-                                                                ),
-                button=['Overwrite','Cancel'],
+                    c['destination'],
+                    cmds.connectionInfo(c['destination'],
+                                        sourceFromDestination=True), '%s.%s' % (c['name'], c['ext'])
+                ),
+                button=['Overwrite', 'Cancel'],
                 defaultButton='Overwrite',
                 cancelButton='Cancel',
                 dismissString='Cancel'
             )
+
         def _makeConnection(attribute):
             # No connection
             if cmds.connectionInfo(c['destination'], isDestination=True) is False:
                 if cmds.isConnected('%s.%s' % (fileNode, attribute), c['destination']) is False:
-                    cmds.connectAttr('%s.%s' % (fileNode, attribute), c['destination'], f=True)
+                    cmds.connectAttr('%s.%s' % (
+                        fileNode, attribute), c['destination'], f=True)
             if cmds.connectionInfo(c['destination'], isDestination=True) is True:
                 # Custom connection
                 if '%s.%s' % (fileNode, attribute) != cmds.connectionInfo(c['destination'], sourceFromDestination=True):
                     choice = _prompt()
                     if choice == 'Overwrite':
-                        cmds.connectAttr('%s.%s' % (fileNode, attribute), c['destination'], f=True)
+                        cmds.connectAttr('%s.%s' % (
+                            fileNode, attribute), c['destination'], f=True)
                 else:
                     if cmds.isConnected('%s.%s' % (fileNode, attribute), c['destination']) is True:
-                        print '%s.%s already connected. Skipping.' % (fileNode, attribute)
+                        print '%s.%s already connected. Skipping.' % (
+                            fileNode, attribute)
 
         if self.isSceneSaved is False:
             raise RuntimeError('Scene is not saved yet.')
 
-        shaderList = ShaderUtility().getShaderList(excludeOverrides=True, excludeUnused=False)
+        shaderList = ShaderUtility().getShaderList(
+            excludeOverrides=True, excludeUnused=False)
 
         # Check if the inShader has an autoConnect setup present
-        shadersWithAssociatedPSDFiles = [f for f in self.DATA if f in inShaders]
+        shadersWithAssociatedPSDFiles = [
+            f for f in self.DATA if f in inShaders]
         if shadersWithAssociatedPSDFiles == []:
             print ('# Couldn\'t find a PSD file for the selected shader. Skipping. #')
             return
 
         for s in shadersWithAssociatedPSDFiles:
             if self.DATA[s]['children'].keys() == []:
-                print '# PSD file is present for \'%s\' but no texture image files found. Skipping. #'%s
+                print '# PSD file is present for \'%s\' but no texture image files found. Skipping. #' % s
                 continue
 
             for child in self.DATA[s]['children']:
                 c = self.DATA[s]['children'][child]
                 if cmds.objExists(c['name']) is False:
                     # Creating file and place2dTexture nodes...
-                    fileNode = cmds.shadingNode("file", name=c['name'], asTexture=True)
-                    place2dTexture = cmds.shadingNode("place2dTexture", name=c['name']+'_place2dTexture', asUtility=True)
-                    cmds.connectAttr("%s.outUV" % place2dTexture, "%s.uvCoord" % fileNode, f=True)
-                    cmds.connectAttr("%s.outUvFilterSize" % place2dTexture, "%s.uvFilterSize" % fileNode, f=True)
-                    attributes = ("coverage", "translateFrame", "rotateFrame", "mirrorU", "mirrorV", "stagger", "wrapU", "wrapV" , "repeatUV" , "vertexUvOne" , "vertexUvTwo" , "vertexUvThree" , "vertexCameraOne", "noiseUV", "offset", "rotateUV")
+                    fileNode = cmds.shadingNode(
+                        "file", name=c['name'], asTexture=True)
+                    place2dTexture = cmds.shadingNode(
+                        "place2dTexture", name=c['name'] + '_place2dTexture', asUtility=True)
+                    cmds.connectAttr("%s.outUV" % place2dTexture,
+                                     "%s.uvCoord" % fileNode, f=True)
+                    cmds.connectAttr(
+                        "%s.outUvFilterSize" % place2dTexture, "%s.uvFilterSize" % fileNode, f=True)
+                    attributes = ("coverage", "translateFrame", "rotateFrame", "mirrorU", "mirrorV", "stagger", "wrapU", "wrapV",
+                                  "repeatUV", "vertexUvOne", "vertexUvTwo", "vertexUvThree", "vertexCameraOne", "noiseUV", "offset", "rotateUV")
                     for attribute in attributes:
-                        cmds.connectAttr("%s.%s" % (place2dTexture, attribute), "%s.%s" % (fileNode, attribute), f=True)
+                        cmds.connectAttr("%s.%s" % (place2dTexture, attribute), "%s.%s" % (
+                            fileNode, attribute), f=True)
                 else:
                     fileNode = c['name']
                 # Set the file node path to the source image path
-                cmds.setAttr('%s.fileTextureName' % fileNode, c['path'], type="string")
+                cmds.setAttr('%s.fileTextureName' %
+                             fileNode, c['path'], type="string")
 
                 # Connect image file to the shader
                 if c['type'] == 'float1':
@@ -379,7 +388,8 @@ class AutoConnect(SceneInfo):
         def format_filename(s):
             valid_chars = "-_.() %s%s" % (string.ascii_letters, string.digits)
             filename = ''.join(c for c in s if c in valid_chars)
-            filename = filename.replace(' ','') # I don't like spaces in filenames.
+            # I don't like spaces in filenames.
+            filename = filename.replace(' ', '')
             return filename
 
         newShaderName = format_filename(newShaderName)
@@ -390,12 +400,14 @@ class AutoConnect(SceneInfo):
 
         # Create folder with new name
         if os.path.isdir(self.DATA[shaderName]['path']):
-            newFolderName = self.DATA[shaderName]['path'].replace(shaderName, newShaderName)
+            newFolderName = self.DATA[shaderName]['path'].replace(
+                shaderName, newShaderName)
             try:
                 os.makedirs(newFolderName)
             except:
                 print 'Error making folder'
-            print '%s -> %s' % (os.path.basename(self.DATA[shaderName]['path']), newFolderName)
+            print '%s -> %s' % (os.path.basename(
+                self.DATA[shaderName]['path']), newFolderName)
 
         # Move child image files:
         for item in self.DATA[shaderName]['children']:
@@ -406,20 +418,22 @@ class AutoConnect(SceneInfo):
                     copy(obj['path'], newPath)
                 except:
                     print 'Error copying file.'
-                print '%s -> %s' % (os.path.basename(obj['path']), os.path.basename(newPath))
+                print '%s -> %s' % (os.path.basename(
+                    obj['path']), os.path.basename(newPath))
 
-        for item in cmds.ls('%s*'%shaderName):
+        for item in cmds.ls('%s*' % shaderName):
             newName = item.replace(shaderName, newShaderName)
             cmds.rename(item, newName)
 
         if os.path.isfile(self.DATA[shaderName]['psdPath']):
-            newPsdPath = self.DATA[shaderName]['psdPath'].replace(shaderName, newShaderName)
+            newPsdPath = self.DATA[shaderName]['psdPath'].replace(
+                shaderName, newShaderName)
             try:
                 copy(self.DATA[shaderName]['psdPath'], newPsdPath)
             except:
                 print 'Error copying file.'
-            print '%s -> %s' % (os.path.basename(self.DATA[shaderName]['psdPath']), os.path.basename(newPsdPath))
-
+            print '%s -> %s' % (os.path.basename(
+                self.DATA[shaderName]['psdPath']), os.path.basename(newPsdPath))
 
         # Replace image path::
         for item in self.DATA[shaderName]['children']:
@@ -428,7 +442,8 @@ class AutoConnect(SceneInfo):
             newName = obj['name'].replace(shaderName, newShaderName)
             if cmds.objExists(newName):
                 newPath = obj['path'].replace(shaderName, newShaderName)
-                cmds.setAttr('%s.fileTextureName'% newName, newPath, type='string')
+                cmds.setAttr('%s.fileTextureName' %
+                             newName, newPath, type='string')
 
         return True
 
@@ -436,7 +451,8 @@ class AutoConnect(SceneInfo):
         if apply is False:
             return
 
-        dirPath = path.normpath(path.join(self.workspace, self.sourceImages, shaderName))
+        dirPath = path.normpath(
+            path.join(self.workspace, self.sourceImages, shaderName))
         if os.path.isdir(dirPath) is not True:
             os.mkdir(dirPath)
             print 'Folder created.'
@@ -444,7 +460,7 @@ class AutoConnect(SceneInfo):
             print 'A folder already exists at this location. No files were created.'
 
         if os.path.isfile('%s/%s.psd' % (dirPath, shaderName)) is not True:
-            f = open('%s/%s.psd' % (dirPath, shaderName),'w')
+            f = open('%s/%s.psd' % (dirPath, shaderName), 'w')
             PSD_TEMPLATE = base64.b64decode(templates.PSD_TEMPLATE_BASE64)
             f.write(PSD_TEMPLATE)
             f.close()
@@ -457,63 +473,64 @@ class AutoConnect(SceneInfo):
 #####################################
 # Camera Export for After Effects
 
+
 # Viewport Preset object
 VIEWPORT_PRESET = (
     # {'displayLights':'default'},
     # {'rendererName':'vp2Renderer'},
-    {'twoSidedLighting':False},
-    {'displayAppearance':'smoothShaded'},
-    {'wireframeOnShaded':False},
-    {'headsUpDisplay':False},
-    {'selectionHiliteDisplay':False},
+    {'twoSidedLighting': False},
+    {'displayAppearance': 'smoothShaded'},
+    {'wireframeOnShaded': False},
+    {'headsUpDisplay': False},
+    {'selectionHiliteDisplay': False},
     # {'useDefaultMaterial':True},
-    {'imagePlane':False},
-    {'useRGBImagePlane':True},
-    {'backfaceCulling':False},
-    {'xray':False},
-    {'jointXray':False},
-    {'activeComponentsXray':False},
-    {'maxConstantTransparency':1.0},
+    {'imagePlane': False},
+    {'useRGBImagePlane': True},
+    {'backfaceCulling': False},
+    {'xray': False},
+    {'jointXray': False},
+    {'activeComponentsXray': False},
+    {'maxConstantTransparency': 1.0},
     # {'displayTextures':False},
-    {'smoothWireframe':True},
-    {'lineWidth':1.0},
-    {'textureAnisotropic':False},
-    {'textureSampling':2},
-    {'textureDisplay':'modulate'},
-    {'textureHilight':True},
+    {'smoothWireframe': True},
+    {'lineWidth': 1.0},
+    {'textureAnisotropic': False},
+    {'textureSampling': 2},
+    {'textureDisplay': 'modulate'},
+    {'textureHilight': True},
     # {'shadows':False},
-    {'nurbsCurves':False},
-    {'nurbsSurfaces':False},
-    {'polymeshes':True},
-    {'subdivSurfaces':True},
-    {'planes':False},
-    {'lights':False},
-    {'cameras':False},
-    {'controlVertices':False},
-    {'grid':False},
-    {'hulls':False},
-    {'joints':False},
-    {'ikHandles':False},
-    {'deformers':False},
-    {'dynamics':False},
-    {'fluids':False},
-    {'hairSystems':False},
-    {'follicles':False},
-    {'nCloths':False},
-    {'nParticles':False},
-    {'nRigids':False},
-    {'dynamicConstraints':False},
-    {'locators':False},
-    {'manipulators':False},
-    {'dimensions':False},
-    {'handles':False},
-    {'pivots':False},
-    {'textures':False},
-    {'strokes':False}
+    {'nurbsCurves': False},
+    {'nurbsSurfaces': False},
+    {'polymeshes': True},
+    {'subdivSurfaces': True},
+    {'planes': False},
+    {'lights': False},
+    {'cameras': False},
+    {'controlVertices': False},
+    {'grid': False},
+    {'hulls': False},
+    {'joints': False},
+    {'ikHandles': False},
+    {'deformers': False},
+    {'dynamics': False},
+    {'fluids': False},
+    {'hairSystems': False},
+    {'follicles': False},
+    {'nCloths': False},
+    {'nParticles': False},
+    {'nRigids': False},
+    {'dynamicConstraints': False},
+    {'locators': False},
+    {'manipulators': False},
+    {'dimensions': False},
+    {'handles': False},
+    {'pivots': False},
+    {'textures': False},
+    {'strokes': False}
 )
-def captureWindow(width, height):
 
-    # Create new window and set focus
+
+def captureWindow(width, height):
     window = QtWidgets.QWidget()
     window.resize(width, height)
     qtLayout = QtWidgets.QVBoxLayout(window)
@@ -521,22 +538,21 @@ def captureWindow(width, height):
 
     cmds.setParent('viewportLayout')
     panelayoutPath = cmds.paneLayout()
-    modelPanelName = cmds.modelPanel("embeddedModelPanel#", cam='camera', menuBarVisible=False)
+    modelPanelName = cmds.modelPanel(
+        "embeddedModelPanel#", cam='camera', menuBarVisible=False)
 
-    # Set default settings
-    modelEditorName = cmds.modelPanel(modelPanelName, query=True, modelEditor=True)
+    modelEditorName = cmds.modelPanel(
+        modelPanelName, query=True, modelEditor=True)
 
     def _get(**kwargs):
         return cmds.modelEditor(p, query=True, **kwargs)
+
     def _set(**kwargs):
         return cmds.modelEditor(modelEditorName, edit=True, **kwargs)
-    # Transferring Camera settings from panel with camera to the new modelPanel
-    allPanels = cmds.getPanel(all=True)
     modelPanels = cmds.getPanel(type='modelPanel')
 
     for p in modelPanels:
         camName = cmds.modelEditor(p, query=True, camera=True)
-        # Find first panel that has a camera named {'camera'
         if camName == 'camera':
             for item in VIEWPORT_PRESET:
                 key = next(iter(item))

@@ -902,7 +902,7 @@ def duplicateShader(*args):
             shaderName, isOverride=False)
         shaderUtility.transferShaderAttributes(shaderName, duplicate)
 
-def editTexture():
+def editTexture(arg=None):
     """ AutoConnect - Edit Textures """
 
     # Check if ac found a valid Photoshop path:
@@ -919,7 +919,7 @@ def editTexture():
 
     for s in sel:
         shaderName = shaderUtility.customStringToShaderName(s)
-        if [k for k in ac.DATA.keys() if shaderName == k] == []:
+        if not next((k for k in ac.DATA.keys() if shaderName == k), None):
             print('# No texture file found to edit for the specified shader. #')
             raise RuntimeError(
                 'There doesn\'t seem to be an AutoConnect setup for the shader.')
@@ -934,7 +934,7 @@ def editTexture():
         break
 
 
-def updateConnections():
+def updateConnections(args=None):
     """ AutoConnect - Update connections """
 
     sel = getListSelection()
@@ -1258,7 +1258,7 @@ def rsRevealOutputDirectory(*args):
             raise RuntimeError('File has not been saved. Unable to get path.')
 
 
-def uvSnapshot(arg):
+def uvSnapshot(arg=None):
     """
     AutoConnect - Creates a UV Snapshot and tries to apply it to the assigned Photoshop document.
     """
@@ -1291,8 +1291,6 @@ def uvSnapshot(arg):
         p = path.normpath(path.join(ac.workspace, ac.sourceImages, shaderName))
         if os.path.isdir(p) is not True:
             os.mkdir(p)
-        else:
-            print '# A folder already exists at this location. No files were created.'
         path.normpath(path.join(p, FILE_NAME))
         cmds.uvSnapshot(name=path.normpath(path.join(p, FILE_NAME)), overwrite=True,
                         antiAliased=True, fileFormat='jpg', xResolution=RESOLUTION, yResolution=RESOLUTION)
@@ -2380,7 +2378,7 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         addButton('rsAddCollection', 'Add', rsAddCollection)
         addButton('rsRemoveCollection', 'Remove', rsRemoveCollection)
         addButton('rsSelectShapes', 'Select Shapes',
-                  rsRenameShader, image='selectObject.png', size=(21, 21))
+                  rsSelectShapes, image='selectObject.png', size=(21, 21))
         addButton('rsRenameShader', 'Rename Shader',
                   rsRenameShader, size=(21, 21), image='QR_rename.png')
         addButton('rsDuplicateShader', 'Duplicate Shader',

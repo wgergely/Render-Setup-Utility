@@ -4,16 +4,16 @@ it collects information about the shaders and thei assignment
 used in the current maya scene.
 """
 
-# pylint: disable=C0103
+# pylint: disable=C0103, E0401
 
 import re
-
-import maya.api.OpenMaya as OpenMaya  # pylint: disable=E0401
-import maya.cmds as cmds  # pylint: disable=E0401
+import maya.api.OpenMaya as OpenMaya
+import maya.cmds as cmds
 import RenderSetupUtility.main.utilities as util
 
 SHADER_TYPES = (
     'aiStandardSurface',
+    'aiToon',
     'aiUtility',
     'aiAmbientOcclusion',
     'aiMotionVector',
@@ -179,19 +179,21 @@ LIGHT_NODES = (
 )
 
 
-class Singleton(type):
-    """
-    Define an Instance operation that lets clients access its unique
-    instance.
-    """
-    _instances = {}
+class ShaderUtilityMetaClass(type):
+    """Singleton."""
+
+    _instance = None
+
+    def __init__(cls, name, bases, attrs, **kwargs):
+        super(ShaderUtilityMetaClass, cls).__init__(name, bases, attrs)
+        cls._instance = None
 
     def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(
-                Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
-
+        if cls._instance is None:
+            cls._instance = super(
+                ShaderUtilityMetaClass, cls).__call__(*args, **kwargs)
+            return cls._instance
+        return cls._instance
 
 class ShaderUtility(object):
     '''
@@ -204,7 +206,7 @@ class ShaderUtility(object):
         update() - Resets the 'data' dict.
     '''
 
-    __metaclass__ = Singleton
+    __metaclass__ = ShaderUtilityMetaClass
 
     def __init__(self):
         self.data = {}
@@ -214,11 +216,7 @@ class ShaderUtility(object):
         self.update()
 
     def _setShadersToData(self):
-        """ Collects scene shaders
-        """
-
-        shapes = cmds.ls(dagObjects=True, shapes=True, long=True)
-
+        """Collects scene shaders."""
         # iterate over shading engines
         for shEngine in cmds.ls(type='shadingEngine'):
             if cmds.sets(shEngine, q=True) is None:
@@ -370,8 +368,7 @@ class ShaderUtility(object):
             }
 
     def update(self):
-        """ Populate self.data
-        """
+        """Populate self.data."""
         self.data = {}
         self._setShadersToData()
         self._setEnvironmentsToData()
@@ -549,7 +546,6 @@ class ShaderUtility(object):
 
         sel = OpenMaya.MSelectionList().add(targetShader)
         node = sel.getDependNode(0)
-        targetMFnDependencyNode = OpenMaya.MFnDependencyNode(node)
 
         # Cycle through all attributes
         attributeCount = int(sourceMFnDependencyNode.attributeCount())
@@ -558,8 +554,6 @@ class ShaderUtility(object):
             # Get plug from attribute
             sourcePlug = OpenMaya.MPlug(
                 node, sourceMFnDependencyNode.attribute(i))
-            destinationPlug = OpenMaya.MPlug(
-                node, targetMFnDependencyNode.attribute(i))
 
             pAttribute = sourcePlug.attribute()
             apiType = sourcePlug.attribute().apiType()
