@@ -18,15 +18,10 @@ SHADER_TYPES = (
     'aiAmbientOcclusion',
     'aiMotionVector',
     'aiShadowMatte',
-    'aiStandard',
     'lambert',
     'aiRaySwitch',
     'aiSkin',
     'aiHair',
-    'alSurface',
-    'alLayer',
-    'alCel',
-    'alHair'
 )
 
 MODE = (
