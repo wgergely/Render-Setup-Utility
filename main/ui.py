@@ -1,3 +1,4 @@
+# pylint: disable=all
 """
 Modules to define the script ui.
 """
@@ -35,7 +36,7 @@ import RenderSetupUtility.main.utility as utility
 
 # pylint: disable=C0103
 
-WINDOW_WIDTH = 426
+WINDOW_WIDTH = 360
 WINDOW_HEIGHT = 150
 WINDOW_BACKGROUND = (0.22, 0.22, 0.22)
 FRAME_BACKGROUND = (0.245, 0.245, 0.245)
@@ -47,6 +48,7 @@ MIN_NUMBER_OF_ROWS = 6
 MAX_NUMBER_OF_ROWS = 12
 
 windowID = 'RenderSetupUtilityWindow'
+windowWorkspaceControl = 'WorkspaceControl'
 windowVersion = RenderSetupUtility.__version__
 windowTitle = 'Render Setup Utility - {}'.format(windowVersion)
 windowNewLayerID = 'RenderSetupUtilityNewLayerWin'
@@ -2247,13 +2249,15 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
         super(RenderSetupUtilityWindow, self).__init__(parent=parent)
         ptr = OpenMayaUI.MQtUtil.mainWindow()
+        self.setObjectName(windowID)
 
         self.setWindowFlags(QtCore.Qt.Window)
         self.setWindowTitle(windowTitle)
-        self.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
-                           QtWidgets.QSizePolicy.Preferred)
+        self.setSizePolicy(
+            QtWidgets.QSizePolicy.Fixed,
+           QtWidgets.QSizePolicy.Preferred
+       )
 
-        self.setObjectName(windowID)
 
         # Set window Layout
         QVBoxLayout = QtWidgets.QVBoxLayout(self)
@@ -2272,7 +2276,7 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             cmds.deleteUI(windowNewShaderID)
 
         # Delete the workspaceControl
-        control = windowID + 'WorkspaceControl'
+        control = windowID + windowWorkspaceControl
         if cmds.workspaceControl(control, q=True, exists=True):
             cmds.workspaceControl(control, e=True, close=True)
             print '# Deleting control {0}'.format(control)
@@ -2280,10 +2284,11 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
         # Delete the instance
         for obj in QtWidgets.QApplication.allWidgets():
+
             if type(obj) is QtWidgets.QWidget:
                 if obj.objectName() == windowID:
                     cmds.workspaceControl(
-                        windowID + 'WorkspaceControl', query=True, exists=True)
+                        windowID + windowWorkspaceControl, query=True, exists=True)
                     print '# Deleting instance {0}'.format(obj)
                     # Delete it for good
                     obj.setParent(None)
@@ -3459,37 +3464,6 @@ class WindowStyle(QtWidgets.QStyledItemDelegate):
         )
 
 
-class EventFilter(QtCore.QObject):
-    """
-    Event filter which emits a parent_closed signal whenever
-    the monitored widget closes.
-
-    via:
-    https://github.com/shotgunsoftware/tk-maya/blob/master/python/tk_maya/panel_util.py
-    """
-
-    def setAssociatedWidget(self, widget_id):
-        """
-        Set the widget to effect
-        """
-        self._widget_id = widget_id
-
-    def eventFilter(self, obj, event):
-        """
-        QT Event filter callback
-
-        :param obj: The object where the event originated from
-        :param event: The actual event object
-        :returns: True if event was consumed, False if not
-        """
-
-        global propertyOverridesMode
-        propertyOverridesMode = False
-        if event.type() == QtCore.QEvent.Type.WindowActivate:
-            pass
-            # obj.updateUI(updateRenderSetup=False)
-
-
 global _cbs
 _cbs = []
 global isWindowVisible
@@ -3520,7 +3494,7 @@ def _cb_kBeforeNew(clientData):
     global _cbs
     global isWindowVisible
     isWindowVisible = cmds.workspaceControl(
-        RenderSetupUtilityWindow.toolName + 'WorkspaceControl', query=True, visible=True)
+        RenderSetupUtilityWindow.toolName + windowWorkspaceControl, query=True, visible=True)
 
     global currentSelection
     currentSelection = None
@@ -3556,7 +3530,7 @@ def _cb_kBeforeOpen(clientData):
 
     global isWindowVisible
     isWindowVisible = cmds.workspaceControl(
-        RenderSetupUtilityWindow.toolName + 'WorkspaceControl', query=True, visible=True)
+        RenderSetupUtilityWindow.toolName + windowWorkspaceControl, query=True, visible=True)
 
     global currentSelection
     currentSelection = None
@@ -3604,7 +3578,6 @@ def createUI(eventsFilters=False):
     rsUtility = utility.Utility()
     rsRenderOutput = renderOutput.RenderOutput()
 
-    # Main window creation
     window = RenderSetupUtilityWindow()
     window.show(dockable=True)  # creates the workspace control
     window.createUI()
@@ -3612,14 +3585,9 @@ def createUI(eventsFilters=False):
 
     windowStyle = WindowStyle(parent=window)
 
-    cmds.workspaceControl(RenderSetupUtilityWindow.toolName +
-                          'WorkspaceControl', edit=True, widthProperty='fixed')
-
-    # Event filters for the window.
-    if eventsFilters:
-        ef = EventFilter(window)
-        ef.setAssociatedWidget(window)
-        window.installEventFilter(ef)
+    cmds.workspaceControl(
+        RenderSetupUtilityWindow.toolName +
+        windowWorkspaceControl, edit=True, widthProperty='free')
 
     if len(_cbs) == 0:
         cb_kBeforeNew = OpenMaya.MSceneMessage.addCallback(

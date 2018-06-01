@@ -13,15 +13,15 @@ import RenderSetupUtility.main.utilities as util
 
 SHADER_TYPES = (
     'aiStandardSurface',
-    'aiToon',
     'aiUtility',
+    'aiToon',
     'aiAmbientOcclusion',
     'aiMotionVector',
     'aiShadowMatte',
-    'lambert',
     'aiRaySwitch',
     'aiSkin',
     'aiHair',
+    'lambert',
 )
 
 MODE = (
@@ -45,6 +45,12 @@ SHADER_OVERRIDE_OPTIONS = (
     },
     {
         'ui': 'aiStandardSurface - No Connections',
+        'type': SHADER_TYPES[0],
+        'mode': MODE[1][0],
+        'suffix': MODE[1][1]
+    },
+    {
+        'ui': 'aiToon - No Connections',
         'type': SHADER_TYPES[0],
         'mode': MODE[1][0],
         'suffix': MODE[1][1]
@@ -178,23 +184,6 @@ LIGHT_NODES = (
     'areaLight'
 )
 
-
-class ShaderUtilityMetaClass(type):
-    """Singleton."""
-
-    _instance = None
-
-    def __init__(cls, name, bases, attrs, **kwargs):
-        super(ShaderUtilityMetaClass, cls).__init__(name, bases, attrs)
-        cls._instance = None
-
-    def __call__(cls, *args, **kwargs):
-        if cls._instance is None:
-            cls._instance = super(
-                ShaderUtilityMetaClass, cls).__call__(*args, **kwargs)
-            return cls._instance
-        return cls._instance
-
 class ShaderUtility(object):
     '''
         Singleton class containing a shader list and assignments
@@ -205,10 +194,22 @@ class ShaderUtility(object):
 
         update() - Resets the 'data' dict.
     '''
+    
+    _instance = None
 
-    __metaclass__ = ShaderUtilityMetaClass
+    def __new__(cls, *awrgs, **kwargs):
+        if not cls._instance:
+            cls._instance = super(ShaderUtility, cls).__new__(
+                cls, *awrgs, **kwargs)
+            cls._instance.__initialized__ = False
+        else:
+            cls._instance.__initialized__ = True
+        return cls._instance
 
     def __init__(self):
+        if hasattr(self, '__initialized__'):
+            if self.__initialized__:
+                return
         self.data = {}
         self.shaderList = self.getShaderList(excludeOverrides=True)
         self.overrides = None
