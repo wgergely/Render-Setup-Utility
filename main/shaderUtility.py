@@ -194,7 +194,7 @@ class ShaderUtility(object):
 
         update() - Resets the 'data' dict.
     '''
-    
+
     _instance = None
 
     def __new__(cls, *awrgs, **kwargs):
@@ -442,96 +442,96 @@ class ShaderUtility(object):
                 )
         return connections
 
-    @staticmethod
-    def _connectPlug(sourcePlug, destinationPlug):
-        pAttribute = sourcePlug.attribute()
-        apiType = sourcePlug.attribute().apiType()
-
-        # Float Groups
-        if apiType == OpenMaya.MFn.kAttribute3Float:
-            for c in xrange(sourcePlug.numChildren()):
-                value = sourcePlug.child(c).asFloat()
-                destinationPlug.child(c).setFloat(value)
-            return
-
-        # TYPED
-        elif apiType == OpenMaya.MFn.kTypedAttribute:
-            pType = OpenMaya.MFnTypedAttribute(pAttribute).attrType()
-            # String
-            if pType == OpenMaya.MFnData.kString:
-                destinationPlug.setString(sourcePlug.asString())
-                return
-        # NUMBERS
-        if apiType == OpenMaya.MFn.kNumericAttribute:
-            pType = OpenMaya.MFnNumericAttribute(pAttribute).numericType()
-            if pType == OpenMaya.MFnNumericData.kBoolean:
-                destinationPlug.setBool(sourcePlug.asBool())
-                return
-            elif pType in [
-                    OpenMaya.MFnNumericData.kShort,
-                    OpenMaya.MFnNumericData.kInt,
-                    OpenMaya.MFnNumericData.kLong,
-                    OpenMaya.MFnNumericData.kByte
-            ]:
-                destinationPlug.setInt(sourcePlug.asInt())
-                return
-            elif pType in [
-                    OpenMaya.MFnNumericData.kFloat,
-                    OpenMaya.MFnNumericData.kDouble,
-                    OpenMaya.MFnNumericData.kAddr
-            ]:
-                destinationPlug.setDouble(sourcePlug.asDouble())
-                return
-        # Enum
-        elif apiType == OpenMaya.MFn.kEnumAttribute:
-            destinationPlug.setInt(sourcePlug.asInt())
-            return
-
-    def _getPlugValue(self, inPlug):
-        apiType = inPlug.attribute().apiType()
-        pAttribute = inPlug.attribute()
-
-        # Float Groups - rotate, translate, scale; Compounds
-        if apiType in [
-                OpenMaya.MFn.kAttribute3Double,
-                OpenMaya.MFn.kAttribute3Float,
-                OpenMaya.MFn.kCompoundAttribute
-        ]:
-            result = []
-            if inPlug.isCompound:
-                for c in xrange(inPlug.numChildren()):
-                    result.append(self._getPlugValue(inPlug.child(c)))
-                return result
-        # Distance
-        elif apiType in [OpenMaya.MFn.kDoubleLinearAttribute, OpenMaya.MFn.kFloatLinearAttribute]:
-            return inPlug.asMDistance().asCentimeters()
-        # Angle
-        elif apiType in [OpenMaya.MFn.kDoubleAngleAttribute, OpenMaya.MFn.kFloatAngleAttribute]:
-            return inPlug.asMAngle().asDegrees()
-        # TYPED
-        elif apiType == OpenMaya.MFn.kTypedAttribute:
-            pType = OpenMaya.MFnTypedAttribute(pAttribute).attrType()
-            # Matrix
-            if pType == OpenMaya.MFnData.kMatrix:
-                return OpenMaya.MFnMatrixData(inPlug.asMObject()).matrix()
-            # String
-            elif pType == OpenMaya.MFnData.kString:
-                return inPlug.asString()
-        # MATRIX
-        elif apiType == OpenMaya.MFn.kMatrixAttribute:
-            return OpenMaya.MFnMatrixData(inPlug.asMObject()).matrix()
-        # NUMBERS
-        elif apiType == OpenMaya.MFn.kNumericAttribute:
-            pType = OpenMaya.MFnNumericAttribute(pAttribute).numericType()
-            if pType == OpenMaya.MFnNumericData.kBoolean:
-                return inPlug.asBool()
-            elif pType in [OpenMaya.MFnNumericData.kShort, OpenMaya.MFnNumericData.kInt, OpenMaya.MFnNumericData.kLong, OpenMaya.MFnNumericData.kByte]:
-                return inPlug.asInt()
-            elif pType in [OpenMaya.MFnNumericData.kFloat, OpenMaya.MFnNumericData.kDouble, OpenMaya.MFnNumericData.kAddr]:
-                return inPlug.asDouble()
-        # Enum
-        elif apiType == OpenMaya.MFn.kEnumAttribute:
-            return inPlug.asInt()
+    # @staticmethod
+    # def _connectPlug(sourcePlug, destinationPlug):
+    #     pAttribute = sourcePlug.attribute()
+    #     apiType = sourcePlug.attribute().apiType()
+    #
+    #     # Float Groups
+    #     if apiType == OpenMaya.MFn.kAttribute3Float:
+    #         for c in xrange(sourcePlug.numChildren()):
+    #             value = sourcePlug.child(c).asFloat()
+    #             destinationPlug.child(c).setFloat(value)
+    #         return
+    #
+    #     # TYPED
+    #     elif apiType == OpenMaya.MFn.kTypedAttribute:
+    #         pType = OpenMaya.MFnTypedAttribute(pAttribute).attrType()
+    #         # String
+    #         if pType == OpenMaya.MFnData.kString:
+    #             destinationPlug.setString(sourcePlug.asString())
+    #             return
+    #     # NUMBERS
+    #     if apiType == OpenMaya.MFn.kNumericAttribute:
+    #         pType = OpenMaya.MFnNumericAttribute(pAttribute).numericType()
+    #         if pType == OpenMaya.MFnNumericData.kBoolean:
+    #             destinationPlug.setBool(sourcePlug.asBool())
+    #             return
+    #         elif pType in [
+    #                 OpenMaya.MFnNumericData.kShort,
+    #                 OpenMaya.MFnNumericData.kInt,
+    #                 OpenMaya.MFnNumericData.kLong,
+    #                 OpenMaya.MFnNumericData.kByte
+    #         ]:
+    #             destinationPlug.setInt(sourcePlug.asInt())
+    #             return
+    #         elif pType in [
+    #                 OpenMaya.MFnNumericData.kFloat,
+    #                 OpenMaya.MFnNumericData.kDouble,
+    #                 OpenMaya.MFnNumericData.kAddr
+    #         ]:
+    #             destinationPlug.setDouble(sourcePlug.asDouble())
+    #             return
+    #     # Enum
+    #     elif apiType == OpenMaya.MFn.kEnumAttribute:
+    #         destinationPlug.setInt(sourcePlug.asInt())
+    #         return
+    #
+    # def _getPlugValue(self, inPlug):
+    #     apiType = inPlug.attribute().apiType()
+    #     pAttribute = inPlug.attribute()
+    #
+    #     # Float Groups - rotate, translate, scale; Compounds
+    #     if apiType in [
+    #             OpenMaya.MFn.kAttribute3Double,
+    #             OpenMaya.MFn.kAttribute3Float,
+    #             OpenMaya.MFn.kCompoundAttribute
+    #     ]:
+    #         result = []
+    #         if inPlug.isCompound:
+    #             for c in xrange(inPlug.numChildren()):
+    #                 result.append(self._getPlugValue(inPlug.child(c)))
+    #             return result
+    #     # Distance
+    #     elif apiType in [OpenMaya.MFn.kDoubleLinearAttribute, OpenMaya.MFn.kFloatLinearAttribute]:
+    #         return inPlug.asMDistance().asCentimeters()
+    #     # Angle
+    #     elif apiType in [OpenMaya.MFn.kDoubleAngleAttribute, OpenMaya.MFn.kFloatAngleAttribute]:
+    #         return inPlug.asMAngle().asDegrees()
+    #     # TYPED
+    #     elif apiType == OpenMaya.MFn.kTypedAttribute:
+    #         pType = OpenMaya.MFnTypedAttribute(pAttribute).attrType()
+    #         # Matrix
+    #         if pType == OpenMaya.MFnData.kMatrix:
+    #             return OpenMaya.MFnMatrixData(inPlug.asMObject()).matrix()
+    #         # String
+    #         elif pType == OpenMaya.MFnData.kString:
+    #             return inPlug.asString()
+    #     # MATRIX
+    #     elif apiType == OpenMaya.MFn.kMatrixAttribute:
+    #         return OpenMaya.MFnMatrixData(inPlug.asMObject()).matrix()
+    #     # NUMBERS
+    #     elif apiType == OpenMaya.MFn.kNumericAttribute:
+    #         pType = OpenMaya.MFnNumericAttribute(pAttribute).numericType()
+    #         if pType == OpenMaya.MFnNumericData.kBoolean:
+    #             return inPlug.asBool()
+    #         elif pType in [OpenMaya.MFnNumericData.kShort, OpenMaya.MFnNumericData.kInt, OpenMaya.MFnNumericData.kLong, OpenMaya.MFnNumericData.kByte]:
+    #             return inPlug.asInt()
+    #         elif pType in [OpenMaya.MFnNumericData.kFloat, OpenMaya.MFnNumericData.kDouble, OpenMaya.MFnNumericData.kAddr]:
+    #             return inPlug.asDouble()
+    #     # Enum
+    #     elif apiType == OpenMaya.MFn.kEnumAttribute:
+    #         return inPlug.asInt()
 
     @staticmethod
     def transferShaderAttributes(shaderName, targetShader):

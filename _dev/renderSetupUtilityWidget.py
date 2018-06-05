@@ -1,55 +1,18 @@
-
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # pylint: disable=E1101, I1101, C0103, C0301, R0913, E0401, C0413
 
 """Python Maya2018 developement module template."""
-
-app = None
-def __init__maya_env():
-    """Loads the development environment needed to
-    test and build extensions for maya."""
-    import os
-    import sys
-
-    global app
-
-    os.environ['MAYA_LOCATION'] = r'C:\Program Files\Autodesk\Maya2018'
-    os.environ['MTOA_EXTENSIONS_PATH'] = r'C:\solidangle\mtoadeploy\2018\extensions'
-    os.environ["QTDIR"] = r'C:\Python27\Lib\site-packages\PySide2'
-    os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = r'C:\Program Files\Autodesk\Maya2018\qt-plugins\platforms'
-    os.environ["PATH"] = r'C:\Program Files\Autodesk\Maya2018\Python\DLLs' + \
-        os.pathsep + os.environ['PATH']
-    os.environ["PATH"] = r'C:\Program Files\Autodesk\Maya2018\bin' + \
-        os.pathsep + os.environ['PATH']
-    sys.path.insert(0,
-                    r'C:\Program Files\Autodesk\Maya2018\Python\Lib\site-packages')
-    sys.path.insert(0, r'C:\Program Files\Autodesk\Maya2018\Python')
-
-    from PySide2 import QtWidgets
-    from maya import standalone
-    app = QtWidgets.QApplication([])
-    standalone.initialize(name="python")
-    from maya import cmds
-    cmds.loadPlugin('mtoa')
-
-
-__init__maya_env()
-
+from RenderSetupUtility._dev._initMaya import initialize
+initialize()
+from RenderSetupUtility._dev._initMaya import app
 
 from PySide2 import QtCore, QtGui, QtWidgets
 from maya import cmds
 from maya.app.general.mayaMixin import MayaQWidgetBaseMixin
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
-from maya.utils import loadStringResourcesForModule
-from mtoa.ui.arnoldmenu import arnoldOpenMtoARenderView
-from mtoa.core import createOptions, installCallbacks
 
-from RenderSetupUtility.__maya_dev__.overrideWidget import ShaderOverrideWidget, PropertyOverrideWidget
-
-createOptions()
-installCallbacks()
-
+from RenderSetupUtility._dev.overrideWidgets import ShaderOverrideWidget, PropertyOverrideWidget
+from RenderSetupUtility._dev.shadersWidget import ShadersWidget
 
 
 class RenderSetupUtilityWidget(QtWidgets.QWidget, MayaQWidgetDockableMixin):
@@ -225,8 +188,8 @@ class RenderSetupUtilityWidget(QtWidgets.QWidget, MayaQWidgetDockableMixin):
         self.layout().addStretch()
 
         # row5 : ListView
-        self._shadersList = QtWidgets.QListView()
-        self.layout().addWidget(self._shadersList)
+        self._shadersWidget = ShadersWidget()
+        self.layout().addWidget(self._shadersWidget)
 
         # row6: Arnold Properties
         self._propertyOverrideWidget = PropertyOverrideWidget()
@@ -326,10 +289,8 @@ class RenderSetupUtilityWidget(QtWidgets.QWidget, MayaQWidgetDockableMixin):
 
 
 if __name__ == '__main__':
-
     from RenderSetupUtility.main.shaderUtility import ShaderUtility
     shaderUtility = ShaderUtility()
-    app.mainWindow = RenderSetupUtilityWidget()
-    app.mainWindow.show()
-    arnoldOpenMtoARenderView()
+    app.w = RenderSetupUtilityWidget()
+    app.w.show()
     app.exec_()
