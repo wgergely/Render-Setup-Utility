@@ -9,8 +9,15 @@ used in the current maya scene.
 import re
 import maya.api.OpenMaya as OpenMaya
 import maya.cmds as cmds
-import RenderSetupUtility.main.utilities as util
+import RenderSetupUtility.utilities as util
 
+def maya_useNewAPI():
+    """
+    The presence of this function tells Maya that the plugin produces, and
+    expects to be passed, objects created using the Maya Python API 2.0.
+    """
+    pass
+    
 SHADER_TYPES = (
     'aiStandardSurface',
     'aiUtility',

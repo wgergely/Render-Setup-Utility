@@ -2,7 +2,7 @@ import functools
 
 from PySide2 import QtWidgets
 
-from RenderSetupUtility._dev.config import SHADER_OVERRIDE_OPTIONS, ARNOLD_PROPERTIES
+from RenderSetupUtility.config import SHADER_OVERRIDE_OPTIONS, ARNOLD_PROPERTIES
 from maya.app.general.mayaMixin import MayaQWidgetBaseMixin
 
 

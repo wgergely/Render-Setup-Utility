@@ -1,13 +1,28 @@
 # -*- coding: utf-8 -*-
-"""The main RenderSetupUtility widget definition."""
+# pylint: disable=E1101, I1101, C0103, C0301, R0913, E0401, C0413
 
-from PyQt5 import QtCore, QtGui, QtWidgets
-
-# pylint: disable=E1101, C0103, R0903, R0904, I1101
+"""RenderSetupUtility widget definition."""
 
 
-class RenderSetupUtilityWidget(QtWidgets.QWidget):
-    """Main RenderSetupUtility widget."""
+##############################################
+# from PySide2 import QtCore
+# if not QtCore.QCoreApplication.instance():
+from RenderSetupUtility._initMaya import initialize
+initialize()
+from RenderSetupUtility._initMaya import app
+    # reload(QtCore)
+###############################################
+
+
+from PySide2 import QtCore, QtGui, QtWidgets
+from maya import cmds
+from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
+from RenderSetupUtility.overrideWidgets import ShaderOverrideWidget, PropertyOverrideWidget
+from RenderSetupUtility.shadersWidget import ShadersWidget
+
+
+class RenderSetupUtilityWidget(QtWidgets.QWidget, MayaQWidgetDockableMixin):
+    """The main RenderSetupUtility widget."""
 
     _instance = None
     BUTTON_SIZE = 22
@@ -47,6 +62,11 @@ class RenderSetupUtilityWidget(QtWidgets.QWidget):
         self._renameShaderButton = None
         self._duplicateShaderButton = None
         self._refreshButton = None
+        self._searchField = None
+        self._searchGroups = None
+        self._shadersWidget = None
+        self._propertyOverrideWidget = None
+        self._shaderOverrideWidget = None
 
         self._createUI()
         self._connectSignals()
@@ -164,16 +184,39 @@ class RenderSetupUtilityWidget(QtWidgets.QWidget):
 
         self._searchField = QtWidgets.QLineEdit()
         self._searchField.setPlaceholderText('Search')
+        self._searchGroups = QtWidgets.QComboBox()
+        row4.layout().addWidget(self._searchField)
+        row4.layout().addWidget(self._searchGroups)
 
         self.layout().addWidget(row1, 0)
         self.layout().addWidget(row2, 0)
         self.layout().addWidget(row3, 0)
+        self.layout().addWidget(row4, 0)
         self.layout().addStretch()
+
+        # row5 : ListView
+        self._shadersWidget = ShadersWidget()
+        self.layout().addWidget(self._shadersWidget)
+
+        # row6: Arnold Properties
+        self._propertyOverrideWidget = PropertyOverrideWidget()
+        self.layout().addWidget(self._propertyOverrideWidget)
+
+        # row6: Arnold Properties
+        self._shaderOverrideWidget = ShaderOverrideWidget()
+        self.layout().addWidget(self._shaderOverrideWidget)
+
 
     def _connectSignals(self):
         """Connects the qt signals."""
         self._addLayerButton.pressed.connect(
             self.addLayerButtonPressed
+        )
+        self._activeLayer.currentIndexChanged.connect(
+            self.activeLayerCurrentIndexChanged
+        )
+        self._visibleLayer.currentIndexChanged.connect(
+            self.visibleLayerCurrentIndexChanged
         )
         self._renderSetupButton.pressed.connect(
             self.renderSetupButtonPressed
@@ -195,6 +238,12 @@ class RenderSetupUtilityWidget(QtWidgets.QWidget):
         )
         self._refreshButton.pressed.connect(
             self.refreshButtonPressed
+        )
+        self._searchField.returnPressed.connect(
+            self.searchFieldReturnPressed
+        )
+        self._searchGroups.currentIndexChanged.connect(
+            self.searchGroupsCurrentIndexChanged
         )
 
     def addLayerButtonPressed(self):
@@ -229,10 +278,25 @@ class RenderSetupUtilityWidget(QtWidgets.QWidget):
         """Action to perform when the button is pressed."""
         print 'refreshButtonPressed'
 
+    def searchFieldReturnPressed(self):
+        """Action to perform when the search button is pressed."""
+        print 'searchFieldReturnPressed'
+
+    def searchGroupsCurrentIndexChanged(self):
+        """Action to perform when the search button is pressed."""
+        print 'searchFieldReturnPressed'
+
+    def visibleLayerCurrentIndexChanged(self):
+        """Action to perform when the visible layer is changed."""
+        print 'visibleLayerCurrentIndexChanged'
+
+    def activeLayerCurrentIndexChanged(self):
+        """Action to perform when the active layer is changed."""
+        print 'activeLayerCurrentIndexChanged'
+
 
 if __name__ == '__main__':
-    app = QtWidgets.QApplication([])
+
     app.w = RenderSetupUtilityWidget()
-    print app.w
     app.w.show()
     app.exec_()
