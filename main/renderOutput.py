@@ -25,25 +25,37 @@ OUTPUT_TEMPLATES = (
 """
 SIZE_TEMPLATE = (
     {
-        'ui': 'HD 1080*0.5 - 1.778:1',
+        'ui': '2K - 2.38:1',
+        'width': 2048,
+        'height': 858,
+        'suffix': '858'
+    },
+    {
+        'ui': '2K@0.5 - 2.38:1',
+        'width': 1024,
+        'height': 430,
+        'suffix': '430'
+    },
+    {
+        'ui': 'HD 1080@0.5 - 1.778:1',
         'width': 960,
         'height': 540,
         'suffix': '540'
     },
     {
-        'ui': 'HD 1080*1 - 1.778:1',
+        'ui': 'HD 1080 - 1.778:1',
         'width': 1920,
         'height': 1080,
         'suffix': '1080'
     },
     {
-        'ui': 'HD 1080*1.5 - 1.778:1',
+        'ui': 'HD 1080@1.5 - 1.778:1',
         'width': 2880,
         'height': 1620,
         'suffix': '1620'
     },
     {
-        'ui': 'ULTRAHD - 1.778:1',
+        'ui': 'HD 1080@2 - 1.778:1',
         'width': 3840,
         'height': 2160,
         'suffix': 'ultraHD'
