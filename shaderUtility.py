@@ -17,7 +17,7 @@ def maya_useNewAPI():
     expects to be passed, objects created using the Maya Python API 2.0.
     """
     pass
-    
+
 SHADER_TYPES = (
     'aiStandardSurface',
     'aiUtility',
@@ -202,6 +202,8 @@ class ShaderUtility(object):
         update() - Resets the 'data' dict.
     '''
 
+    SHADER_NODES = SHADER_NODES
+    SHADER_TYPES = SHADER_TYPES
     _instance = None
 
     def __new__(cls, *awrgs, **kwargs):
@@ -226,59 +228,62 @@ class ShaderUtility(object):
     def _setShadersToData(self):
         """Collects scene shaders."""
         # iterate over shading engines
+        shaderName = None
         for shEngine in cmds.ls(type='shadingEngine'):
             if cmds.sets(shEngine, q=True) is None:
                 continue
+            for connection in cmds.listConnections(shEngine):
+                if not [f for f in SHADER_NODES if f in cmds.nodeType(connection, i=True)]:
+                    continue
+                if cmds.objectType(connection) not in SHADER_TYPES:
+                    continue
 
-            shaderName = None
-            for connection in [x for x in cmds.listConnections(shEngine)]:
-                if [f for f in SHADER_NODES if f in cmds.nodeType(connection, i=True)]:
-                    if cmds.objectType(connection) not in SHADER_TYPES:
-                        continue
+                # Check for namespace:
+                split = self.stripSuffix(connection).split(':')
+                if len(split) == 1:  # no namespace
+                    shaderName = split[0]
+                    nameSpace = ''
+                if len(split) > 1:
+                    shaderName = self.stripSuffix(
+                        connection).split(':')[-1]
+                    nameSpace = self.stripSuffix(
+                        connection).split(':')[0]
+                if len(nameSpace) >= 1:
+                    shaderName = '%s:%s' % (nameSpace, shaderName)
 
-                    # Check for namespace:
-                    split = self.stripSuffix(connection).split(':')
-                    if len(split) == 1:  # no namespace
-                        shaderName = split[0]
-                        nameSpace = ''
-                    if len(split) > 1:
-                        shaderName = self.stripSuffix(
-                            connection).split(':')[-1]
-                        nameSpace = self.stripSuffix(
-                            connection).split(':')[0]
-                    if len(nameSpace) >= 1:
-                        shaderName = '%s:%s' % (nameSpace, shaderName)
+                self.data[shaderName] = {
+                    'name': shaderName,
+                    'nameSpace': nameSpace,
+                    'type': cmds.objectType(connection),
+                    'usedBy': [],
+                    'count': 0,
+                    'shadingGroup': shEngine,
+                    'customString': '',
+                    'shader': True,
+                    'environment': False,
+                    'standIn': False,
+                    'light': False,
+                    'autoConnect': False
+                }
 
-                    self.data[shaderName] = {
-                        'name': shaderName,
-                        'nameSpace': nameSpace,
-                        'type': cmds.objectType(connection),
-                        'usedBy': [],
-                        'count': 0,
-                        'shadingGroup': shEngine,
-                        'customString': '',
-                        'shader': True,
-                        'environment': False,
-                        'standIn': False,
-                        'light': False,
-                        'autoConnect': False
-                    }
+            if not shaderName:
+                continue
 
-                    for sh_connection in cmds.sets(shEngine, q=True):
-                        if not cmds.ls(sh_connection, long=True):
-                            continue
-                        self.data[shaderName]['usedBy'].append(
-                            cmds.ls(sh_connection, long=True)[0]
-                        )
-                        self.data[shaderName]['count'] = len(
-                            self.data[shaderName]['usedBy']
-                        )
+            for sh_connection in cmds.sets(shEngine, q=True):
+                for shape in cmds.ls(sh_connection, long=True):
+                    continue
+                self.data[shaderName]['usedBy'].append(
+                    cmds.ls(sh_connection, long=True)[0]
+                )
+            self.data[shaderName]['count'] = len(
+                self.data[shaderName]['usedBy']
+            )
 
     def _setEnvironmentsToData(self):
         """ Collects scene environments
         """
 
-        shapes = cmds.ls(dagObjects=True, shapes=True, long=True)
+        shapes = cmds.ls(shapes=True, long=True)
         for item in [f for f in shapes if cmds.nodeType(f) in ENVIRONMENT_NODES]:
             # Checking for namespace:
             split = str(item).split('|')[-1].split(':')
@@ -287,7 +292,7 @@ class ShaderUtility(object):
                 nameSpace = ''
             if len(split) > 1:
                 nameSpace = shaderName = str(item).split('|')[-1].split(':')[0]
-                shaderName = shaderName = str(
+                shaderName = str(
                     item).split('|')[-1].split(':')[-1]
             if len(nameSpace) >= 1:
                 shaderName = '%s:%s' % (nameSpace, shaderName)
@@ -296,7 +301,7 @@ class ShaderUtility(object):
                 'name': shaderName,
                 'nameSpace': nameSpace,
                 'type': cmds.nodeType(item),
-                'usedBy': [cmds.ls(shaderName, long=True)[0]],
+                'usedBy': [cmds.ls(shaderName, long=True)[0],],
                 'count': 1,
                 'shadingGroup': 'renderSettings',
                 'customString': '%s (1)' % shaderName,
@@ -311,7 +316,7 @@ class ShaderUtility(object):
         """ Collects scene environments
         """
         # StandIns
-        for item in cmds.ls(type='aiStandIn'):
+        for item in cmds.ls(type='aiStandIn', long=True):
 
             # Checking for namespace:
             split = str(item).split('|')[-1].split(':')
@@ -329,7 +334,7 @@ class ShaderUtility(object):
                 'name': shaderName,
                 'nameSpace': nameSpace,
                 'type': cmds.nodeType(item),
-                'usedBy': [cmds.ls(shaderName, long=True)[0]],
+                'usedBy': [cmds.ls(shaderName, long=True)[0],],
                 'count': 1,
                 'shadingGroup': 'renderSettings',
                 'customString': '%s (1)' % shaderName,
@@ -344,7 +349,7 @@ class ShaderUtility(object):
         """ Collects scene environments
         """
 
-        shapes = cmds.ls(dagObjects=True, shapes=True, long=True)
+        shapes = cmds.ls(shapes=True, long=True)
         # Lights
         for item in [f for f in shapes if cmds.nodeType(f) in LIGHT_NODES]:
 
@@ -364,7 +369,7 @@ class ShaderUtility(object):
                 'name': shaderName,
                 'nameSpace': nameSpace,
                 'type': cmds.nodeType(item),
-                'usedBy': [cmds.ls(shaderName, long=True)[0]],
+                'usedBy': [cmds.ls(shaderName, long=True)[0],],
                 'count': 1,
                 'shadingGroup': 'renderSettings',
                 'customString': '%s (1)' % shaderName,
