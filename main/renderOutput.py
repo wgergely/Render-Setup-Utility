@@ -1,6 +1,9 @@
 """
 This module defines resolution presets and methods
 that apply them to the Maya output and camera settings.
+
+TODO: Messy script. It was one of my first Python scripts written and could do
+with a tidy-up/re-write.
 """
 
 import os
@@ -12,6 +15,7 @@ import RenderSetupUtility.main.utilities as util
 # pylint: disable=C0103
 
 windowID = 'RenderSetupUtilityWindow'
+IMAGES = 'renders' # renders folder TODO: this needs to exposed as a preference
 
 OUTPUT_TEMPLATES = (
     'Not set',
@@ -235,7 +239,6 @@ class RenderOutput(object):
             if cmds.objExists('camera'):
                 cmds.setAttr('cameraShape.renderable', 1)
 
-
     def setVersion(self, version):
         cmds.setAttr('%s.renderVersion ' %
                      DEFAULTS_NODE, version, type='string')
@@ -256,7 +259,6 @@ class RenderOutput(object):
 
     def pathStr(self, renderLayer, long=False):
         ROOT = cmds.workspace(query=True, rootDirectory=True)
-        IMAGES = 'images'
         version = cmds.optionMenu('%s_outputVersionMenu' %
                                   (windowID), query=True, value=True)
         if ROOT:
@@ -294,32 +296,36 @@ class RenderOutput(object):
                 return None
 
     def getVersions(self, lyr):
-        ROOT = cmds.workspace(query=True, rootDirectory=True)
-        IMAGES = 'images'
-        if ROOT:
-            path = os.path.normpath(os.path.join(ROOT, IMAGES, lyr))
-            if os.path.isdir(path):
-                versions = [d for d in os.listdir(path) if os.path.isdir(
-                    os.path.join(path, d)) and re.match('^v\d{3}$', d)]
-                return util.natsort(versions)
-            else:
-                return None
-        else:
-            print 'Workgroup isn\'t set.'
-            return None
+        workspace = cmds.workspace(query=True, rootDirectory=True)
+
+        if not os.path.isdir(workspace):
+            raise RuntimeError('# Workspace folder does not exists.')
+
+        path = os.path.normpath(os.path.join(workspace, IMAGES, lyr))
+        if not os.path.isdir(path):
+            print '# Unable to check for versions.\n{path} does not exist.'.format(path=path)
+            return
+
+        versions = [d for d in os.listdir(path) if os.path.isdir(
+            os.path.join(path, d)) and re.match('^v\d{3}$', d)]
+
+        return util.natsort(versions)
 
     def addVersionDir(self, lyr, version):
-        ROOT = cmds.workspace(query=True, rootDirectory=True)
-        if ROOT:
-            IMAGES = 'images'
-            path = os.path.normpath(os.path.join(ROOT, IMAGES, lyr))
-            if os.path.isdir(path):
-                versionFolder = os.path.normpath(os.path.join(path, version))
-                if not os.path.exists(versionFolder):
-                    os.makedirs(versionFolder)
-                    print 'New version folder added.'
-        else:
-            print 'Workgroup isn\'t set.'
+        workspace = cmds.workspace(query=True, rootDirectory=True)
+
+        if not os.path.isdir(workspace):
+            raise RuntimeError('# Workspace folder does not exists.')
+
+        path = os.path.normpath(os.path.join(workspace, IMAGES, lyr))
+        if not os.path.isdir(path):
+            print '# Unable to check for versions.\n{path} does not exist.'.format(path=path)
+            return
+
+        versionFolder = os.path.normpath(os.path.join(path, version))
+        if not os.path.exists(versionFolder):
+            os.makedirs(versionFolder)
+            print '{version} folder created added.'.format(version=version)
 
     def setStartFrame(self, frame=1):
         frame = round(frame, 0)

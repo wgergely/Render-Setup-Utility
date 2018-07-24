@@ -1032,7 +1032,7 @@ def updateConnections(args=None):
         ac.doIt(shaderName)
 
 
-def rsIncrementOutputVersion():
+def rsIncrementOutputVersion(args):
     """
     +1 button. Increments the version number of the output.
     """
@@ -1040,15 +1040,21 @@ def rsIncrementOutputVersion():
     lyr = rsUtility.activeLayer.name()
     versions = rsRenderOutput.getVersions(lyr)
 
-    if versions:
-        search = re.search('[0-9]{3}', versions[-1])
-        if search:
-            newVersion = 'v{0}'.format(str(int(search.group(0))
-                    + 1).zfill(3))
-            rsRenderOutput.addVersionDir(lyr, newVersion)
-            rsRenderOutput.setVersion(newVersion)
-            _outputTemplate()
+    global rsRenderOutput
+    rsRenderOutput = renderOutput.RenderOutput()
 
+    if not versions:
+        print '# Unable to increment version. No versions folders exists (yet).'
+        return
+
+    versions = [int(re.sub('[^0-9]','', f)) for f in versions]
+    if not versions:
+        return
+
+    incremented_version_string = 'v{0}'.format(str(max(versions) + 1).zfill(3))
+    rsRenderOutput.addVersionDir(lyr, incremented_version_string)
+    rsRenderOutput.setVersion(incremented_version_string)
+    _outputTemplate()
     _updatePathText()
 
 
