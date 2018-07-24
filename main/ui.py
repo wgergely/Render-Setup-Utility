@@ -1765,7 +1765,7 @@ def addTextField(
         inTitle,
         placeholderText=placeholderText,
         enterCommand=enterCommand,
-        textChangedCommand=textChangedCommand,
+        alwaysInvokeEnterCommandOnReturn=True,
         editable=True,
         enable=enable,
         visible=visible,
@@ -2333,7 +2333,7 @@ class CustomRenamer(object):
             self.doIt()
             self.updateUI(updateWindow=True)
 
-    def assignShader(self):
+    def assignShader(self, *args):
         self.makeNameString()
 
         sel = cmds.ls(selection=True)
