@@ -1,19 +1,28 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=E1101, I1101, C0103, C0301, R0913, E0401, C0413
 
-"""This module initializes a standalone context, loads the Maya PySide modules,
-and initializes the maya.cmds and mtoa modules.
+"""This module initializes the Maya 2018 standalone context, loads the Maya PySide modules,
+and initializes the maya.cmds and MtoA modules.
 
 Example:
-    from TKWWBK.mayaStandaloneContext import *
-    initialize()
+    import _initMaya
+    _initMaya.initialize(**kwargs)
+
+kwargs:
+    load_plugins (bool):        Loads a set of Maya Plugins.
+                                Calls the loadPlugins() function.
+    load_MtoA (bool):           Loads MtoA when set to True.
+                                Calls the initMtoa() function.
+    populate_scene (bool):      Populates the Maya scene with the defined content.
+                                To define the contents of the scene make sure to override
+                                populateScene() function.
 
 """
 
 import os
 import sys
 
-app = None
+app = None # the global app variable
 
 MAYA_LOCATION = r'C:\Program Files\Autodesk\Maya2018'
 MAYA_BIN = r'C:\Program Files\Autodesk\Maya2018\bin'
@@ -75,6 +84,7 @@ sys.path.insert(0, PYTHON_ROOT)
 from PySide2 import QtWidgets
 from maya import cmds, mel, standalone
 
+
 def loadPlugins():
     """Loads maya plugins"""
     for script in MEL_SCRIPTS:
@@ -82,7 +92,10 @@ def loadPlugins():
     for plugins in MAYA_PLUGINS:
         cmds.loadPlugin(plugins)
 
+
 def initMtoa():
+    """Loads Arnold into the standalone context."""
+
     import mtoa.core as core
     core.installCallbacks()
     core.createOptions()
@@ -91,38 +104,62 @@ def initMtoa():
     import mtoa.ui.ae.templates as templates
     templates.registerAETemplate(ShadingEngineTemplate, "shadingEngine")
 
-def getSG(shader):
-    if not shader or not cmds.objExists(shader):
-        return None
-    return next((f for f in (cmds.listConnections(shader, d=True, et=True, t='shadingEngine'))), None)
-
-def createShader(shaderType):
-    shader = cmds.shadingNode(shaderType, asShader=True)
-    name = '{}SG'.format(shader)
-    cmds.sets(name=name, renderable=True, noSurfaceShader=True, empty=True)
-    cmds.connectAttr('{}.outColor'.format(shader) ,'{}.surfaceShader'.format(name))
-    return shader
 
 def populateScene():
-    """Dummy data."""
-    for _ in xrange(1):
-        cmds.sets(cmds.polyCube(), e=True, forceElement=getSG(createShader('aiStandardSurface')))
-        cmds.sets(cmds.polyCube(), e=True, forceElement=getSG(createShader('aiUtility')))
-        cmds.sets(cmds.polyCube(), e=True, forceElement=getSG(createShader('aiToon')))
-        cmds.sets(cmds.polyCube(), e=True, forceElement=getSG(createShader('aiAmbientOcclusion')))
-        cmds.sets(cmds.polyCube(), e=True, forceElement=getSG(createShader('aiMotionVector')))
-        cmds.sets(cmds.polyCube(), e=True, forceElement=getSG(createShader('aiShadowMatte')))
-        cmds.sets(cmds.polyCube(), e=True, forceElement=getSG(createShader('aiRaySwitch')))
-        cmds.sets(cmds.polyCube(), e=True, forceElement=getSG(createShader('aiSkin')))
-        cmds.sets(cmds.polyCube(), e=True, forceElement=getSG(createShader('aiHair')))
-        cmds.sets(cmds.polyCube(), e=True, forceElement=getSG(createShader('lambert')))
+    """Populates the Maya scene with default contents."""
 
-def initialize():
+    def getSG(shader):
+        """Convenience function to get the ShadingGroup of a shader."""
+        if not shader or not cmds.objExists(shader):
+            return None
+        return next((f for f in (cmds.listConnections(shader, d=True, et=True, t='shadingEngine'))), None)
+
+
+    def createShader(shaderType):
+        """Convenience function to create a shader."""
+        shader = cmds.shadingNode(shaderType, asShader=True)
+        name = '{}SG'.format(shader)
+        cmds.sets(name=name, renderable=True, noSurfaceShader=True, empty=True)
+        cmds.connectAttr('{}.outColor'.format(shader),
+                         '{}.surfaceShader'.format(name))
+        return shader
+
+    # The Arnold5 specific shaders.
+    for _ in xrange(1):
+        cmds.sets(cmds.polyCube(), e=True, forceElement=getSG(
+            createShader('aiStandardSurface')))
+        cmds.sets(cmds.polyCube(), e=True,
+                  forceElement=getSG(createShader('aiUtility')))
+        cmds.sets(cmds.polyCube(), e=True,
+                  forceElement=getSG(createShader('aiToon')))
+        cmds.sets(cmds.polyCube(), e=True, forceElement=getSG(
+            createShader('aiAmbientOcclusion')))
+        cmds.sets(cmds.polyCube(), e=True, forceElement=getSG(
+            createShader('aiMotionVector')))
+        cmds.sets(cmds.polyCube(), e=True, forceElement=getSG(
+            createShader('aiShadowMatte')))
+        cmds.sets(cmds.polyCube(), e=True, forceElement=getSG(
+            createShader('aiRaySwitch')))
+        cmds.sets(cmds.polyCube(), e=True,
+                  forceElement=getSG(createShader('aiSkin')))
+        cmds.sets(cmds.polyCube(), e=True,
+                  forceElement=getSG(createShader('aiHair')))
+        cmds.sets(cmds.polyCube(), e=True,
+                  forceElement=getSG(createShader('lambert')))
+
+
+def initialize(load_plugins=True, load_MtoA=True, populate_scene=True):
     """Loads the development environment needed to
     test and build extensions for maya."""
+
     global app
+
     app = QtWidgets.QApplication([])
     standalone.initialize(name="python")
-    loadPlugins()
-    initMtoa()
-    populateScene()
+
+    if load_plugins:
+        loadPlugins()
+    if load_MtoA:
+        initMtoa()
+    if populate_scene:
+        populateScene()
