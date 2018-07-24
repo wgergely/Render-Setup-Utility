@@ -17,6 +17,10 @@ kwargs:
                                 To define the contents of the scene make sure to override
                                 populateScene() function.
 
+Author:
+    Gergely Wootsch, 2018
+    hello@gergely-wootsch.com
+
 """
 
 import os
