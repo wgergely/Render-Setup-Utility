@@ -19,6 +19,7 @@ import RenderSetupUtility.main.renderOutput as renderOutput
 from RenderSetupUtility.main.shaderUtility import ShaderUtility
 
 SOURCE_IMAGES = 'textures'
+RENDERS = 'renders'
 
 # When parsing directories look for these extensions types.
 ACCEPT_TYPES = (
@@ -181,19 +182,13 @@ def exportCamera():
     return path
 
 
-def raiseError(item, string):
-    if item is True:
-        pass
-    else:
-        raise RuntimeError(string)
-
-
 class SceneInfo(object):
     """
     Utility class.
 
     Queries the state of the current scene and returns the appropiate paths
     if 'isSceneSaved' is true.
+
     """
 
     def __init__(self):
@@ -202,7 +197,7 @@ class SceneInfo(object):
         self.startFrame = cmds.getAttr(
             renderOutput.DEFAULTS_NODE + '.startFrame')
         self.endFrame = cmds.getAttr(renderOutput.DEFAULTS_NODE + '.endFrame')
-        self.duration = range(int(self.startFrame), int(self.endFrame + 1))
+        self.duration = int(self.endFrame - int(self.startFrame)) + 1
         self.currentTime = cmds.currentUnit(query=True, time=True)
         self.frameRate = [
             t for t in renderOutput.TIME_TEMPLATE if self.currentTime == t['name']][0]['fps']
@@ -219,9 +214,10 @@ class SceneInfo(object):
             return
 
         self.sceneName = cmds.file(query=True, sceneName=True, shortName=True)
-        self.scenePath = cmds.file(query=True, expandName=True)
-        self.workspace = cmds.workspace(query=True, rootDirectory=True)
-        self.sourceImages = path.join(self.workspace, SOURCE_IMAGES)
+        self.scenePath = os.path.normpath(cmds.file(query=True, expandName=True))
+        self.workspace = os.path.normpath(cmds.workspace(query=True, rootDirectory=True))
+        self.sourceImages = os.path.normpath(path.join(self.workspace, SOURCE_IMAGES))
+        self.renders = os.path.normpath(path.join(self.workspace, RENDERS))
 
 
 class AutoConnect(SceneInfo):
