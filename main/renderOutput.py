@@ -246,16 +246,10 @@ class RenderOutput(object):
     def incrementVersion(self):
         pass
 
-    def _getAOVs(self):
+    def get_active_Arnold_AOVs(self):
         "Get all aovs"
+        return [cmds.getAttr('{}.name'.format(f)) for f in cmds.ls(type='aiAOV') if cmds.getAttr('{}.enabled'.format(f))]
 
-        AOV_BEAUTY = 'beauty'
-        AOV_LIST = [AOV_BEAUTY]
-
-        for node in cmds.ls(type='aiAOV'):
-            AOV_LIST.append(str(cmds.getAttr('%s.name' % node)))
-
-        return AOV_LIST
 
     def pathStr(self, renderLayer, long=False):
         ROOT = cmds.workspace(query=True, rootDirectory=True)
