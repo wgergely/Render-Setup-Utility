@@ -476,10 +476,10 @@ VIEWPORT_PRESET = (
     # {'rendererName':'vp2Renderer'},
     {'twoSidedLighting': False},
     {'displayAppearance': 'smoothShaded'},
-    {'wireframeOnShaded': False},
+    {'wireframeOnShaded': True},
     {'headsUpDisplay': False},
     {'selectionHiliteDisplay': False},
-    # {'useDefaultMaterial':True},
+    {'useDefaultMaterial': False}, #
     {'imagePlane': False},
     {'useRGBImagePlane': True},
     {'backfaceCulling': False},

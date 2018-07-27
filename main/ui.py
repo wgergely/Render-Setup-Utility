@@ -44,7 +44,7 @@ WINDOW_WIDTH = 360
 WINDOW_HEIGHT = 150
 WINDOW_BACKGROUND = (0.22, 0.22, 0.22)
 FRAME_BACKGROUND = (0.245, 0.245, 0.245)
-FRAME_MARGIN = 1
+FRAME_MARGIN = 0
 SCROLLBAR_THICKNESS = 6
 ACTIVEITEM_PREFIX = ' '
 COLLECTION_SUFFIX = '_collection'
@@ -687,6 +687,10 @@ def rsShaderGroups(arg):
 def rsOpenRenderSetupWindow(arg):
     renderSetupUI.createUI()
 
+def rsOpenUnifiedRenderGlobals(arg):
+    import maya.mel as mel
+    mel.eval('unifiedRenderGlobalsWindow')
+
 
 def rsAddNewLayer(item):
     """
@@ -1160,11 +1164,12 @@ def rsMakeComp(args):
 
 
     def capture_layout():
-        multiSample = \
-            cmds.getAttr('hardwareRenderingGlobals.multiSampleEnable'
-                         )
-        ssao = \
-            cmds.getAttr('hardwareRenderingGlobals.ssaoEnable')
+        multiSample = cmds.getAttr(
+            'hardwareRenderingGlobals.multiSampleEnable'
+        )
+        ssao = cmds.getAttr(
+            'hardwareRenderingGlobals.ssaoEnable'
+        )
 
         window = autoConnect.captureWindow(
             int(currentWidth) * 0.50, int(currentHeight) * 0.50 + 30
@@ -1172,17 +1177,16 @@ def rsMakeComp(args):
 
         # Tying to force Maya to retain this setting...
         # Set image format to jpg
-
         cmds.setAttr('%s.imageFormat'
                      % renderOutput.DEFAULTS_NODE, 8)
 
         # Make pers non-renderable
-
         cmds.setAttr('perspShape.renderable', 0)
 
         # Make camera renderable, if exists.
         cmds.setAttr('cameraShape.renderable', 1)
-
+        image_path = IMAGE_PATH.replace('.{}.jpg'.format(PADDING), '')
+        image_path = os.path.normpath(IMAGE_PATH.replace('<AOV>', ''))
         cmds.playblast(  # compression=compression,
             format='image',
             percent=int(100),
@@ -1191,7 +1195,7 @@ def rsMakeComp(args):
             endTime=int(END_FRAME),
             showOrnaments=True,
             forceOverwrite=True,
-            filename=IMAGE_PATH.replace('.{}.jpg'.format(PADDING), ''),
+            filename=image_path,
             widthHeight=[int(currentWidth),
                          int(currentHeight)],
             rawFrameNumbers=True,
@@ -2603,22 +2607,37 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin,
         # ################################################
         # Active Render Layer
 
-        cmds.separator(height=12, style='none')
-        addFrameLayout('%s_frameLayoutLayers' % windowID,
-                       'Visible Render Layer', collapsable=False,
-                       labelVisible=False, marginHeight=0)
-        addRowLayout('%s_rowLayoutActiveRenderLayer' % windowID, 3,
-                     columnAlign3=('left', 'left', 'right'),
-                     columnAttach3=('left', 'both', 'right'),
-                     columnWidth3=((WINDOW_WIDTH - FRAME_MARGIN * 2)
-                                   * 0.075, (WINDOW_WIDTH - FRAME_MARGIN * 2) * 0.85,
-                                   (WINDOW_WIDTH - FRAME_MARGIN * 2) * 0.075))
+        # cmds.separator(height=12, style='none')
+        addFrameLayout(
+            '%s_frameLayoutLayers' % windowID,
+            'Visible Render Layer', collapsable=False,
+            labelVisible=False,
+            marginHeight=0
+        )
+
+        addRowLayout(
+            '%s_rowLayoutActiveRenderLayer' % windowID,
+            4,
+            columnAlign4=('left', 'left', 'right', 'right'),
+            columnAttach4=('left', 'both', 'right', 'right'),
+            columnWidth4=(
+                (WINDOW_WIDTH - FRAME_MARGIN * 2) * 0.075,
+                (WINDOW_WIDTH - FRAME_MARGIN * 2) * 0.775,
+                (WINDOW_WIDTH - FRAME_MARGIN * 2) * 0.075,
+                (WINDOW_WIDTH - FRAME_MARGIN * 2) * 0.075
+            )
+        )
+
+
         addButton('%s_addNewLayer' % windowID, 'New', rsAddNewLayer,
                   image='RS_create_layer', size=(21, 21))
         addOptionMenu('%s_selectActiveLayer' % windowID,
                       'Active Layer    ', (), rsSelectActiveLayer)
-        addButton('rsOpenRenderSetupWindow', 'Edit',
+        addButton('rsOpenRenderSetupWindow', 'Render Setup',
                   rsOpenRenderSetupWindow, image='render_setup.png',
+                  size=(21, 21))
+        addButton('rsOpenUnifiedRenderGlobals', 'Render Globals',
+                  rsOpenUnifiedRenderGlobals, image='render_setup.png',
                   size=(21, 21))
 
         # ################################################
@@ -2649,28 +2668,20 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin,
         addFrameLayout('%s_frameLayout02' % windowID, 'Collections',
                        labelVisible=False, marginHeight=0)
 
-        addRowLayout('%s_rowLayout02' % windowID, 6, columnAlign6=(
-            'left',
-            'left',
-            'left',
-            'left',
-            'left',
-            'left',
-        ), columnAttach6=(
-            'both',
-            'both',
-            'right',
-            'right',
-            'right',
-            'right',
-        ), columnWidth6=(
-            (WINDOW_WIDTH - FRAME_MARGIN * 2) * 0.18,
-            (WINDOW_WIDTH - FRAME_MARGIN * 2) * 0.18,
-            (WINDOW_WIDTH - FRAME_MARGIN * 2) * 0.415,
-            (WINDOW_WIDTH - FRAME_MARGIN * 2) * 0.075,
-            (WINDOW_WIDTH - FRAME_MARGIN * 2) * 0.075,
-            (WINDOW_WIDTH - FRAME_MARGIN * 2) * 0.075,
-        ))
+        addRowLayout(
+            '%s_rowLayout02' % windowID,
+            6,
+            columnAlign6=('left', 'left', 'left', 'left', 'left', 'left'),
+            columnAttach6=('both', 'both', 'right', 'right', 'right', 'right'),
+            columnWidth6=(
+                (WINDOW_WIDTH - FRAME_MARGIN * 2) * 0.18,
+                (WINDOW_WIDTH - FRAME_MARGIN * 2) * 0.18,
+                (WINDOW_WIDTH - FRAME_MARGIN * 2) * 0.415,
+                (WINDOW_WIDTH - FRAME_MARGIN * 2) * 0.075,
+                (WINDOW_WIDTH - FRAME_MARGIN * 2) * 0.075,
+                (WINDOW_WIDTH - FRAME_MARGIN * 2) * 0.075,
+            )
+        )
 
         addButton('rsAddCollection', 'Add', rsAddCollection)
         addButton('rsRemoveCollection', 'Remove', rsRemoveCollection)
@@ -2843,7 +2854,7 @@ class RenderSetupUtilityWindow(MayaQWidgetDockableMixin,
             marginWidth=0,
             marginHeight=0,
             collapse=False,
-            labelVisible=False,
+            labelVisible=True,
         )
 
         # Add the renamer window
