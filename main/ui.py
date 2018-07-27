@@ -1,9 +1,17 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=E1101, I1101, C0103, R0913
-# pylint: disable=
 
 """
-Modules to define the script ui.
+MAIN MODULE. This model is badly structured and bloated (got to start learning somewhere!),
+and badly needs a full rewrite.
+
+The plugin works for now but future development will be a fire-walk of hell. The main issue is
+Maya's own cmds strucutre for making UI - it is too limited to handle what I set
+out to do.
+
+The Qt5 branch is a stub development branch to rewrite the plugin
+in pure Qt with the appropiate model/view methodology.
+
 """
 
 import base64
@@ -13,19 +21,21 @@ import os.path as path
 import re
 import tempfile
 
-import shiboken2
-
 import PySide2.QtCore as QtCore
 import PySide2.QtGui as QtGui
 import PySide2.QtWidgets as QtWidgets
 from PySide2.QtCore import QProcess
 
+import shiboken2
+
+from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 import maya.api.OpenMaya as OpenMaya
 import maya.app.renderSetup.model.renderSetup as renderSetup
 import maya.app.renderSetup.views.renderSetup as renderSetupUI
 import maya.cmds as cmds
 import maya.mel as mel
 import maya.OpenMayaUI as OpenMayaUI
+
 import RenderSetupUtility
 import RenderSetupUtility.ac.aeCommand as aeCommand
 import RenderSetupUtility.ac.autoConnect as autoConnect
@@ -34,11 +44,12 @@ import RenderSetupUtility.ac.templates as templates
 import RenderSetupUtility.main.renderOutput as renderOutput
 import RenderSetupUtility.main.utilities as util
 import RenderSetupUtility.main.utility as utility
-from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
-from RenderSetupUtility.main.shaderUtility import SHADER_OVERRIDE_OPTIONS, \
-    SHADER_TYPES, ShaderUtility
 
-# pylint: disable=C0103
+from RenderSetupUtility.main.shaderUtility import SHADER_OVERRIDE_OPTIONS
+from RenderSetupUtility.main.shaderUtility import SHADER_TYPES
+from RenderSetupUtility.main.shaderUtility import ShaderUtility
+
+
 
 WINDOW_WIDTH = 360
 WINDOW_HEIGHT = 150
