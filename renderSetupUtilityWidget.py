@@ -21,7 +21,7 @@ from RenderSetupUtility.overrideWidgets import ShaderOverrideWidget, PropertyOve
 from RenderSetupUtility.shadersWidget import ShadersWidget
 
 
-class RenderSetupUtilityWidget(QtWidgets.QWidget, MayaQWidgetDockableMixin):
+class RenderSetupUtilityWindow(QtWidgets.QWidget, MayaQWidgetDockableMixin):
     """The main RenderSetupUtility widget."""
 
     _instance = None
@@ -38,7 +38,7 @@ class RenderSetupUtilityWidget(QtWidgets.QWidget, MayaQWidgetDockableMixin):
 
     def __new__(cls, *awrgs, **kwargs):
         if not cls._instance:
-            cls._instance = super(RenderSetupUtilityWidget, cls).__new__(
+            cls._instance = super(RenderSetupUtilityWindow, cls).__new__(
                 cls, *awrgs, **kwargs)
             cls._instance.__initialized__ = False
         else:
@@ -50,7 +50,7 @@ class RenderSetupUtilityWidget(QtWidgets.QWidget, MayaQWidgetDockableMixin):
         if hasattr(self, '__initialized__'):
             if self.__initialized__:
                 return
-        super(RenderSetupUtilityWidget, self).__init__(parent=parent)
+        super(RenderSetupUtilityWindow, self).__init__(parent=parent)
 
         self._addLayerButton = None
         self._activeLayer = None
@@ -297,6 +297,6 @@ class RenderSetupUtilityWidget(QtWidgets.QWidget, MayaQWidgetDockableMixin):
 
 if __name__ == '__main__':
 
-    app.w = RenderSetupUtilityWidget()
+    app.w = RenderSetupUtilityWindow()
     app.w.show()
     app.exec_()

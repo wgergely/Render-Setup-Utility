@@ -60,7 +60,7 @@ class PropertyOverrideWidget(OverrideWidget):
     """Widget for the proerties overrides."""
 
     PROPERTIES = ARNOLD_PROPERTIES
-    LABEL = 'Apply shader overrides'
+    LABEL = 'Apply property overrides'
 
     def __init__(self, parent=None):
         super(PropertyOverrideWidget, self).__init__(parent=parent)
