@@ -55,7 +55,7 @@ WINDOW_WIDTH = 360
 WINDOW_HEIGHT = 150
 WINDOW_BACKGROUND = (0.22, 0.22, 0.22)
 FRAME_BACKGROUND = (0.245, 0.245, 0.245)
-FRAME_MARGIN = 0
+FRAME_MARGIN = 1
 SCROLLBAR_THICKNESS = 6
 ACTIVEITEM_PREFIX = ' '
 COLLECTION_SUFFIX = '_collection'
@@ -711,7 +711,6 @@ def rsAddNewLayer(item):
     WIDTH = WINDOW_WIDTH * (float(4) / 5)
     OFFSET = WINDOW_WIDTH * (float(1) / 5)
     HEIGHT = 75
-
     if cmds.window(windowNewLayerID, exists=True):
         cmds.deleteUI(windowNewLayerID)
 

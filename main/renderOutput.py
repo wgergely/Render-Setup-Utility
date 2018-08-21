@@ -29,6 +29,18 @@ OUTPUT_TEMPLATES = (
 """
 SIZE_TEMPLATE = (
     {
+        'ui': 'TKWWBK: 2K - 1.778',
+        'width': 2048,
+        'height': 1152,
+        'suffix': '1152'
+    },
+    {
+        'ui': 'TKWWBK: 1K - 1.778',
+        'width': 1024,
+        'height': 576,
+        'suffix': '575'
+    },
+    {
         'ui': '2K - 2.38:1',
         'width': 2048,
         'height': 858,
