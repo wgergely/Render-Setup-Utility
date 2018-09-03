@@ -7,9 +7,9 @@
 ##############################################
 # from PySide2 import QtCore
 # if not QtCore.QCoreApplication.instance():
-from RenderSetupUtility._initMaya import initialize
+from RenderSetupUtility.mayaStandaloneContext import initialize
 initialize()
-from RenderSetupUtility._initMaya import app
+from RenderSetupUtility.mayaStandaloneContext import app
     # reload(QtCore)
 ###############################################
 
@@ -296,7 +296,6 @@ class RenderSetupUtilityWindow(QtWidgets.QWidget, MayaQWidgetDockableMixin):
 
 
 if __name__ == '__main__':
-
     app.w = RenderSetupUtilityWindow()
     app.w.show()
     app.exec_()
