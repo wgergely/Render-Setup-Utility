@@ -22,6 +22,7 @@ SHADER_TYPES = (
     'aiSkin',
     'aiHair',
     'lambert',
+    'phong',
 )
 
 MODE = (
