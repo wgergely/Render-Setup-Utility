@@ -9,14 +9,19 @@ import os
 import os.path as path
 import string
 from shutil import copy
-import shiboken2
-import _winreg
+
 import PySide2.QtWidgets as QtWidgets
+import shiboken2
+
+import _winreg
+
 import maya.cmds as cmds
 import maya.OpenMayaUI as OpenMayaUI
+
 import RenderSetupUtility.ac.templates as templates
 import RenderSetupUtility.main.renderOutput as renderOutput
 from RenderSetupUtility.main.shaderUtility import ShaderUtility
+
 
 SOURCE_IMAGES = 'textures'
 RENDERS = 'renders'
@@ -42,12 +47,15 @@ ATTRIBTE_TYPES = (
     {'attribute': 'color', 'type': 'float3', 'name': 'Diffuse Color'},
     {'attribute': 'Kd', 'type': 'float1', 'name': 'Diffuse Color Weight'},
     {'attribute': 'diffuseRoughness', 'type': 'float1', 'name': 'Diffuse Roughness'},
-    {'attribute': 'directDiffuse', 'type': 'float1', 'name': 'Direct Diffuse Weight'},
-    {'attribute': 'indirectDiffuse', 'type': 'float1', 'name': 'Indirect Diffuse Weight'},
+    {'attribute': 'directDiffuse', 'type': 'float1',
+        'name': 'Direct Diffuse Weight'},
+    {'attribute': 'indirectDiffuse', 'type': 'float1',
+        'name': 'Indirect Diffuse Weight'},
     {'attribute': 'KsColor', 'type': 'float3', 'name': 'Specular Color'},
     {'attribute': 'Ks', 'type': 'float1', 'name': 'Specular Weight'},
     {'attribute': 'specularRoughness', 'type': 'float1', 'name': 'Specular Roughness'},
-    {'attribute': 'specularAnisotropy', 'type': 'float1', 'name': 'Specular Anisotropy'},
+    {'attribute': 'specularAnisotropy',
+        'type': 'float1', 'name': 'Specular Anisotropy'},
     {'attribute': 'specularRotation', 'type': 'float1', 'name': 'Specular Rotation'},
     {'attribute': 'KrColor', 'type': 'float3', 'name': 'Reflection Color'},
     {'attribute': 'Kr', 'type': 'float1', 'name': 'Reflection Weight'},
@@ -58,43 +66,30 @@ ATTRIBTE_TYPES = (
 )
 
 
-
-def getAdobePath(appName):
+def getAdobePath(app):
     """
     Returns the windows registry values for the latest version number found.
     """
 
-    Registry = _winreg.ConnectRegistry(None, _winreg.HKEY_LOCAL_MACHINE)
-    RawKey = _winreg.OpenKey(Registry, 'SOFTWARE\Adobe\%s' % appName)
+    def registry(*args):
+        return r'SOFTWARE\Adobe\{}'.format('\\'.join(args).lstrip('\\'))
 
-    subkeys = []
-    try:
-        i = 0
-        while True:
-            subkeys.append(_winreg.EnumKey(RawKey, i))
-            i += 1
-    except WindowsError:
-        pass
-    _winreg.CloseKey(RawKey)
+    keys = []
+    with _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, registry(app)) as k:
+        for i in xrange(_winreg.QueryInfoKey(k)[0]):  # getting number of keys
+            keys.append(_winreg.EnumKey(k, i))
 
-    versionNumbers = sorted([float(x) for x in subkeys], reverse=True)
-    for v in versionNumbers:
-        try:
-            RawKey = _winreg.OpenKey(
-                Registry, r'SOFTWARE\Adobe\%s\%s' % (appName, str(v)))
-            i = 0
-            while 1:
-                name, value, type = _winreg.EnumValue(RawKey, i)
-                attr = {'path': value, 'version': v}
+    # iterating found versions
+    for v in sorted([str(float(f)) for f in keys], reverse=True):
+        with _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, registry(app, v)) as k:
+            for i in xrange(_winreg.QueryInfoKey(k)[0]):
+                _, value, _ = _winreg.EnumValue(k, i)
                 if os.path.isdir(value):
-                    _winreg.CloseKey(RawKey)
-                    return attr
-                i += 1
-        except WindowsError:
-            pass
-        _winreg.CloseKey(RawKey)
-        return None
-        # break
+                    return {
+                        'path': value,
+                        'version': v
+                    }
+    return None
 
 
 def exportCamera():
@@ -154,9 +149,8 @@ def exportCamera():
     INVALID_CHARACTERS = '{}'
 
     # Read the maya file
-    f = open(path, 'r')
-    MAYA_ASCII_DATA = f.read()
-    f.close()
+    with open(path, 'r') as f:
+        MAYA_ASCII_DATA = f.read()
 
     lines = MAYA_ASCII_DATA.split('\n')
 
@@ -214,9 +208,12 @@ class SceneInfo(object):
             return
 
         self.sceneName = cmds.file(query=True, sceneName=True, shortName=True)
-        self.scenePath = os.path.normpath(cmds.file(query=True, expandName=True))
-        self.workspace = os.path.normpath(cmds.workspace(query=True, rootDirectory=True))
-        self.sourceImages = os.path.normpath(path.join(self.workspace, SOURCE_IMAGES))
+        self.scenePath = os.path.normpath(
+            cmds.file(query=True, expandName=True))
+        self.workspace = os.path.normpath(
+            cmds.workspace(query=True, rootDirectory=True))
+        self.sourceImages = os.path.normpath(
+            path.join(self.workspace, SOURCE_IMAGES))
         self.renders = os.path.normpath(path.join(self.workspace, RENDERS))
 
 
@@ -479,7 +476,7 @@ VIEWPORT_PRESET = (
     {'wireframeOnShaded': True},
     {'headsUpDisplay': False},
     {'selectionHiliteDisplay': False},
-    {'useDefaultMaterial': False}, #
+    {'useDefaultMaterial': False},
     {'imagePlane': False},
     {'useRGBImagePlane': True},
     {'backfaceCulling': False},

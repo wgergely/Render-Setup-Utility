@@ -42,6 +42,7 @@ import RenderSetupUtility.ac.autoConnect as autoConnect
 import RenderSetupUtility.ac.psCommand as psCommand
 import RenderSetupUtility.ac.templates as templates
 import RenderSetupUtility.main.renderOutput as renderOutput
+from RenderSetupUtility.main.renderOutput import IMAGES
 import RenderSetupUtility.main.utilities as util
 import RenderSetupUtility.main.utility as utility
 
@@ -62,8 +63,6 @@ COLLECTION_SUFFIX = '_collection'
 MIN_NUMBER_OF_ROWS = 6
 MAX_NUMBER_OF_ROWS = 12
 
-# IMAGES_ROOT = 'images' #maya default
-IMAGES_ROOT = 'renders'  # glassworks pipe
 
 windowID = 'RenderSetupUtilityWindow'
 windowWorkspaceControl = 'WorkspaceControl'
@@ -205,9 +204,6 @@ def _outputTemplate():
 
 
 def _updatePathText():
-
-    # path text
-
     lyr = rsUtility.activeLayer.name()
     cmds.button('%s_revealOutputDirectory' % windowID, edit=True,
                 label='Output path not yet set')
@@ -1398,7 +1394,7 @@ def rsRevealOutputDirectory(*args):
         cmd = None
         workspace = cmds.workspace(query=True, rootDirectory=True)
         if workspace:
-            p = os.path.join(workspace, IMAGES_ROOT, val)
+            p = os.path.join(workspace, IMAGES, val)
             p = os.path.normpath(p)
             parent = p.rsplit('\\', 1)[0]
             if os.path.isdir(parent):

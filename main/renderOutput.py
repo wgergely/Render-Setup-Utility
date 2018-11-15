@@ -15,13 +15,11 @@ import RenderSetupUtility.main.utilities as util
 # pylint: disable=C0103
 
 windowID = 'RenderSetupUtilityWindow'
-IMAGES = 'renders' # renders folder TODO: this needs to exposed as a preference
+IMAGES = 'renders'  # renders folder TODO: this needs to exposed as a preference
 
 OUTPUT_TEMPLATES = (
     'Not set',
-    '<RenderLayer>\\<Version>\\<RenderLayer>_<Version>',
-    '<RenderLayer>\\<RenderLayer>_<Version>',
-    '<RenderLayer>\\<Version>\\<RenderLayer>'
+    'render\\<RenderLayer>\\<Version>\\<RenderLayer>_<Version>',
 )
 
 """ Resolution templates.
@@ -262,7 +260,6 @@ class RenderOutput(object):
         "Get all aovs"
         return [cmds.getAttr('{}.name'.format(f)) for f in cmds.ls(type='aiAOV') if cmds.getAttr('{}.enabled'.format(f))]
 
-
     def pathStr(self, renderLayer, long=False):
         ROOT = cmds.workspace(query=True, rootDirectory=True)
         version = cmds.optionMenu('%s_outputVersionMenu' %
@@ -293,7 +290,7 @@ class RenderOutput(object):
                     if long is False:
                         return path
                     if long:
-                        longName = os.path.join(ROOT, IMAGES, path)
+                        longName = os.path.join(ROOT, IMAGES, 'render', path)
                         longName = os.path.normpath(longName)
                         return longName
                 else:
@@ -302,18 +299,20 @@ class RenderOutput(object):
                 return None
 
     def getVersions(self, lyr):
+        """TODO: fix"""
         workspace = cmds.workspace(query=True, rootDirectory=True)
 
         if not os.path.isdir(workspace):
             raise RuntimeError('# Workspace folder does not exists.')
 
-        path = os.path.normpath(os.path.join(workspace, IMAGES, lyr))
+        path = os.path.normpath(os.path.join(workspace, IMAGES, 'render', lyr))
         if not os.path.isdir(path):
-            print '# Unable to check for versions.\n{path} does not exist.'.format(path=path)
+            print '# Unable to check for versions.\n{} does not exist.'.format(
+                path)
             return
 
-        versions = [d for d in os.listdir(path) if os.path.isdir(
-            os.path.join(path, d)) and re.match('^v\d{3}$', d)]
+        versions = [f for f in os.listdir(path) if os.path.isdir(
+            os.path.join(path, f)) and re.match('^v\d{3}$', f)]
 
         return util.natsort(versions)
 
@@ -323,9 +322,9 @@ class RenderOutput(object):
         if not os.path.isdir(workspace):
             raise RuntimeError('# Workspace folder does not exists.')
 
-        path = os.path.normpath(os.path.join(workspace, IMAGES, lyr))
+        path = os.path.normpath(os.path.join(workspace, IMAGES, 'render', lyr))
         if not os.path.isdir(path):
-            print '# Unable to check for versions.\n{path} does not exist.'.format(path=path)
+            print '# Unable to check for versions.\n{} does not exist.'.format(path)
             return
 
         versionFolder = os.path.normpath(os.path.join(path, version))
