@@ -51,12 +51,6 @@ SHADER_OVERRIDE_OPTIONS = (
         'suffix': MODE[1][1]
     },
     {
-        'ui': 'aiToon - No Connections',
-        'type': SHADER_TYPES[0],
-        'mode': MODE[1][0],
-        'suffix': MODE[1][1]
-    },
-    {
         'ui': 'aiStandardSurface - Keep Opacity',
         'type': SHADER_TYPES[0],
         'mode': MODE[3][0],
