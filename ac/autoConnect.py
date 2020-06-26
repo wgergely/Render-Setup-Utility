@@ -23,17 +23,15 @@ import RenderSetupUtility.main.renderOutput as renderOutput
 from RenderSetupUtility.main.shaderUtility import ShaderUtility
 
 
-SOURCE_IMAGES = 'textures'
-RENDERS = 'renders'
-
 # When parsing directories look for these extensions types.
 ACCEPT_TYPES = (
     'jpg',
+    'tx',
+    'exr',
     'jpeg',
     'gif',
     'exr',
     'png',
-    'eps',
     'pic',
     'hdr',
     'sgi',
@@ -64,6 +62,41 @@ ATTRIBTE_TYPES = (
     {'attribute': 'emissionColor', 'type': 'float3', 'name': 'Emission Color'},
     {'attribute': 'opacity', 'type': 'float3', 'name': 'Opacity'}
 )
+
+
+
+def find_project_folder(key):
+    """Return the relative path of a project folder.
+
+    Args:
+        key (unicode): The name of a Maya project folder name, eg. 'sourceImages'.
+
+    Return:
+        unicode: The name of the folder that corresponds with `key`.
+
+    """
+    if not key:
+        raise ValueError('Key must be specified.')
+
+    _file_rules = cmds.workspace(
+        fr=True,
+        query=True,
+    )
+
+    file_rules = {}
+    for n, v in enumerate(_file_rules):
+        m = n % 2
+        k = _file_rules[n - m].lower()
+        if m == 0:
+            file_rules[k] = None
+        if m == 1:
+            file_rules[k] = _file_rules[n]
+
+    key = key.lower()
+    if key in file_rules:
+        return file_rules[key]
+    return key
+
 
 
 def getAdobePath(app):
@@ -213,9 +246,9 @@ class SceneInfo(object):
         self.workspace = os.path.normpath(
             cmds.workspace(query=True, rootDirectory=True))
         self.sourceImages = os.path.normpath(
-            path.join(self.workspace, SOURCE_IMAGES))
-        self.renders = os.path.normpath(path.join(self.workspace, RENDERS))
-
+            path.join(self.workspace, find_project_folder('sourceImages')))
+        self.renders = os.path.normpath(
+            path.join(self.workspace, find_project_folder('images'))) # render folder
 
 class AutoConnect(SceneInfo):
     """Querries the 'workspace/imageSource' folder and collects all folders and

@@ -12,6 +12,7 @@ import maya.cmds as cmds
 import RenderSetupUtility.main.utilities as util
 
 SHADER_TYPES = (
+    'standardSurface',
     'aiStandardSurface',
     'aiUtility',
     'aiToon',
@@ -179,10 +180,11 @@ LIGHT_NODES = (
     'areaLight'
 )
 
+
 class ShaderUtility(object):
     '''
         Singleton class containing a shader list and assignments
-        excluding override shadersself.
+        excluding override shaders.
 
         Sets all data in to 'data' (dict).
         Provides utility methods for duplicating shaders.
@@ -629,7 +631,7 @@ class ShaderUtility(object):
                     OPTION['type'] == SHADER_TYPES[3]
                 ) and (
                     cnx['destinationAttribute'] == 'opacity'
-                ):
+            ):
                 source = cnx['source'] + R
 
             destination = newShader + '.' + cnx['destinationAttribute']
